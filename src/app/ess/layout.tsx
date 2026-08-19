@@ -7,7 +7,7 @@ export default function ESSLayout({ children }: { children: React.ReactNode }) {
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-2">
-              <svg className="flex-shrink-0" width="32" height="32" viewBox="-10 -10 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg className="flex-shrink-0" width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                   <linearGradient id="logo-grad-ess" x1="0%" y1="100%" x2="100%" y2="0%">
                     <stop offset="0%" stopColor="#f93a0b" />
@@ -15,8 +15,10 @@ export default function ESSLayout({ children }: { children: React.ReactNode }) {
                     <stop offset="100%" stopColor="#fcb612" />
                   </linearGradient>
                 </defs>
-                <polygon points="25,5 75,5 100,50 75,95 25,95 0,50" fill="url(#logo-grad-ess)" />
-                <path d="M70 30 L40 50 M75 40 L45 55 M80 50 L50 60 M75 60 L45 65 M70 70 L40 70" stroke="white" strokeWidth="3" strokeLinecap="round" />
+                <g transform="scale(0.8) translate(12.5, 12.5)">
+                  <polygon points="25,5 75,5 100,50 75,95 25,95 0,50" fill="url(#logo-grad-ess)" />
+                  <path d="M70 30 L40 50 M75 40 L45 55 M80 50 L50 60 M75 60 L45 65 M70 70 L40 70" stroke="white" strokeWidth="3" strokeLinecap="round" />
+                </g>
               </svg>
               <div className="flex flex-col">
                 <span className="text-xl font-bold tracking-tight text-[#1a1060] leading-none dark:text-white">Zivira</span>
