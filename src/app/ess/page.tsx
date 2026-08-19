@@ -5,7 +5,7 @@ export default function EmployeeDashboardPage() {
     <>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-6 pt-24 pb-12 space-y-8">
+      <main className="w-full px-6 pt-24 pb-12 space-y-8">
         
         {/* Welcome Section */}
         <div className="bg-gradient-to-r from-orange-600 to-orange-700 rounded-2xl shadow-md p-8 text-white flex flex-col md:flex-row justify-between items-center gap-6">
