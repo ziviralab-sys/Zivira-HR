@@ -7,7 +7,7 @@ export default function ESSLayout({ children }: { children: React.ReactNode }) {
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-2">
-              <svg className="flex-shrink-0" width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg className="flex-shrink-0" width="32" height="32" viewBox="-10 -10 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                   <linearGradient id="logo-grad-ess" x1="0%" y1="100%" x2="100%" y2="0%">
                     <stop offset="0%" stopColor="#f93a0b" />
