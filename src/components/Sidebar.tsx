@@ -12,7 +12,7 @@ export default function Sidebar({ isCollapsed = false, setIsCollapsed = () => {}
       <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-800">
         {!isCollapsed && (
           <div className="flex items-center gap-2">
-            <svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg className="flex-shrink-0" width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <linearGradient id="logo-grad" x1="0%" y1="100%" x2="100%" y2="0%">
                   <stop offset="0%" stopColor="#f93a0b" />
@@ -25,7 +25,7 @@ export default function Sidebar({ isCollapsed = false, setIsCollapsed = () => {}
             </svg>
             <div className="flex flex-col">
               <span className="text-xl font-bold tracking-tight text-[#1a1060] leading-none dark:text-white">Zivira</span>
-              <span className="text-[10px] text-[#1a1060] font-medium tracking-wide dark:text-gray-300">Labs Pvt. Ltd.</span>
+              <span className="text-[10px] text-[#1a1060] font-medium tracking-wide dark:text-gray-300 whitespace-nowrap">Labs Pvt. Ltd.</span>
             </div>
           </div>
         )}
