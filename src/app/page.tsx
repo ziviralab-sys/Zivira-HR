@@ -101,7 +101,7 @@ export default function AdminDashboardPage() {
                 <Tooltip 
                   cursor={{ fill: '#f3f4f6' }}
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Total Salary']}
+                  formatter={(value: any) => [`₹${Number(value).toLocaleString()}`, 'Total Salary']}
                 />
                 <Bar dataKey="amount" fill="#f97316" radius={[4, 4, 0, 0]} maxBarSize={50} />
               </BarChart>
