@@ -17,7 +17,7 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
       <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
       <div className={`flex-1 flex flex-col transition-all duration-300 ${!isNoSidebar ? (isCollapsed ? 'ml-16' : 'ml-64') : ''}`}>
         {!isNoSidebar && <Header />}
-        <main className={`flex-1 overflow-auto bg-gray-50 dark:bg-gray-950 ${pathname === '/' ? 'p-0' : 'p-6'}`}>
+        <main className={`flex-1 overflow-auto bg-gray-50 dark:bg-gray-950 ${isNoSidebar ? 'p-0' : 'p-6'}`}>
           {children}
         </main>
       </div>
