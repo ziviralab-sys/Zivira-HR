@@ -17,8 +17,10 @@ export default function LoginPage() {
     // Simulate authentication delay
     setTimeout(() => {
       setIsLoading(false);
+      document.cookie = "auth=1; path=/; max-age=86400"; // Set auth cookie for 1 day
       toast.success("Welcome back, Admin!");
       router.push("/");
+      router.refresh(); // Refresh to ensure middleware state is updated in the client
     }, 1500);
   };
 

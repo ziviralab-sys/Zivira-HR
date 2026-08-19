@@ -79,10 +79,10 @@ export default function Sidebar({ isCollapsed = false, setIsCollapsed = () => {}
           <span className="text-xl">📱</span>
           {!isCollapsed && <span>ESS View &rarr;</span>}
         </Link>
-        <Link href="/login" className={`text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'}`} title="Sign Out">
+        <button onClick={() => { document.cookie = 'auth=; Max-Age=0; path=/;'; window.location.href = '/login'; }} className={`text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'}`} title="Sign Out">
           <span className="text-xl">🚪</span>
           {!isCollapsed && <span>Sign Out</span>}
-        </Link>
+        </button>
       </div>
     </aside>
   );
