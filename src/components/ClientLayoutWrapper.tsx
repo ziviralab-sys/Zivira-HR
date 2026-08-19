@@ -8,7 +8,7 @@ import { Toaster, toast } from "react-hot-toast";
 
 export default function ClientLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isNoSidebar = pathname.startsWith("/ess") || pathname.startsWith("/onboarding") || pathname === "/login";
+  const isNoSidebar = pathname === "/" || pathname.startsWith("/ess") || pathname.startsWith("/onboarding");
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
@@ -17,7 +17,7 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
       <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
       <div className={`flex-1 flex flex-col transition-all duration-300 ${!isNoSidebar ? (isCollapsed ? 'ml-16' : 'ml-64') : ''}`}>
         {!isNoSidebar && <Header />}
-        <main className={`flex-1 overflow-auto bg-gray-50 dark:bg-gray-950 ${pathname === '/login' ? 'p-0' : 'p-6'}`}>
+        <main className={`flex-1 overflow-auto bg-gray-50 dark:bg-gray-950 ${pathname === '/' ? 'p-0' : 'p-6'}`}>
           {children}
         </main>
       </div>

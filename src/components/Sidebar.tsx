@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 export default function Sidebar({ isCollapsed = false, setIsCollapsed = () => {} }: { isCollapsed?: boolean, setIsCollapsed?: (val: boolean) => void }) {
   const pathname = usePathname();
-  if (pathname.startsWith("/ess") || pathname.startsWith("/onboarding") || pathname === "/login") return null;
+  if (pathname.startsWith("/ess") || pathname.startsWith("/onboarding") || pathname === "/") return null;
 
   return (
     <aside className={`bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-800 min-h-screen flex flex-col fixed left-0 top-0 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
@@ -46,7 +46,7 @@ export default function Sidebar({ isCollapsed = false, setIsCollapsed = () => {}
         </button>
       </div>
       <nav className={`flex-1 py-4 space-y-2 ${isCollapsed ? 'px-2' : 'px-4'}`}>
-        <Link href="/" className={`flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${isCollapsed ? 'justify-center' : ''}`} title="Dashboard">
+        <Link href="/dashboard" className={`flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${isCollapsed ? 'justify-center' : ''}`} title="Dashboard">
           <span className="text-xl">📊</span>
           {!isCollapsed && <span className="ml-3">Dashboard</span>}
         </Link>
@@ -79,7 +79,7 @@ export default function Sidebar({ isCollapsed = false, setIsCollapsed = () => {}
           <span className="text-xl">📱</span>
           {!isCollapsed && <span>ESS View &rarr;</span>}
         </Link>
-        <button onClick={() => { document.cookie = 'auth=; Max-Age=0; path=/;'; window.location.href = '/login'; }} className={`text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'}`} title="Sign Out">
+        <button onClick={() => { document.cookie = 'auth=; Max-Age=0; path=/;'; window.location.href = '/'; }} className={`text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'}`} title="Sign Out">
           <span className="text-xl">🚪</span>
           {!isCollapsed && <span>Sign Out</span>}
         </button>

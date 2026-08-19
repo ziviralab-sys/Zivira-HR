@@ -1,210 +1,110 @@
 "use client";
 
-import Link from "next/link";
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend
-} from 'recharts';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
-const salaryData = [
-  { name: 'Mar', amount: 450000 },
-  { name: 'Apr', amount: 480000 },
-  { name: 'May', amount: 510000 },
-  { name: 'Jun', amount: 505000 },
-  { name: 'Jul', amount: 540000 },
-  { name: 'Aug', amount: 580000 },
-];
+export default function LoginPage() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-const deptData = [
-  { name: 'Engineering', value: 45 },
-  { name: 'Sales', value: 25 },
-  { name: 'HR & Admin', value: 10 },
-  { name: 'Marketing', value: 20 },
-];
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    // Simulate authentication delay
+    setTimeout(() => {
+      setIsLoading(false);
+      document.cookie = "auth=1; path=/; max-age=86400"; // Set auth cookie for 1 day
+      toast.success("Welcome back, Admin!");
+      router.push("/dashboard");
+      router.refresh(); // Refresh to ensure middleware state is updated in the client
+    }, 1500);
+  };
 
-const COLORS = ['#ea580c', '#10b981', '#f59e0b', '#8b5cf6'];
-
-export default function AdminDashboardPage() {
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-12">
+    <div 
+      className="min-h-screen flex items-center justify-end relative bg-cover bg-left bg-no-repeat pr-12 md:pr-32"
+      style={{ 
+        backgroundImage: "url('/log%20in%20page%201.png')"
+      }}
+    >
       
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Command Center</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">Company overview and key metrics for August 2026.</p>
-        </div>
-        <div className="flex gap-3">
-          <Link href="/payroll/run" className="bg-orange-600 text-white px-5 py-2.5 rounded-lg font-bold hover:bg-orange-700 transition-colors shadow-sm flex items-center gap-2">
-            <span>💳</span> Run Payroll
-          </Link>
-          <button className="bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border border-gray-300 px-5 py-2.5 rounded-lg font-bold hover:bg-gray-50 dark:bg-gray-950 transition-colors shadow-sm">
-            Generate Reports
+      {/* Right Panel - Form */}
+      <div className="w-full max-w-md relative z-10">
+
+        <form onSubmit={handleLogin} className="space-y-6 bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email address</label>
+            <input 
+              type="email" 
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@zivira.com"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 outline-none transition-colors"
+            />
+          </div>
+          
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+              <a href="#" className="text-sm font-medium text-orange-600 hover:text-orange-500 dark:text-orange-400 dark:hover:text-orange-300">Forgot password?</a>
+            </div>
+            <input 
+              type="password" 
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 outline-none transition-colors"
+            />
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={isLoading}
+            className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white transition-colors ${isLoading ? 'bg-orange-400 cursor-not-allowed' : 'bg-orange-600 hover:bg-orange-700'}`}
+          >
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Signing in...
+              </span>
+            ) : "Sign in"}
           </button>
-        </div>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-6 hover:shadow-md transition-shadow">
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-gray-500 dark:text-gray-400 font-medium text-sm uppercase tracking-wide">Total Employees</h3>
-            <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded flex items-center">&uarr; 12%</span>
-          </div>
-          <p className="text-4xl font-black text-gray-900 dark:text-gray-100">142</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">+15 new hires this month</p>
-        </div>
-
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-6 hover:shadow-md transition-shadow">
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-gray-500 dark:text-gray-400 font-medium text-sm uppercase tracking-wide">Today's Attendance</h3>
-            <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded flex items-center">&uarr; 2%</span>
-          </div>
-          <p className="text-4xl font-black text-gray-900 dark:text-gray-100">94%</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">134 Present, 8 Absent/Leave</p>
-        </div>
-
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-6 hover:shadow-md transition-shadow">
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-gray-500 dark:text-gray-400 font-medium text-sm uppercase tracking-wide">Monthly Payroll</h3>
-            <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded flex items-center">&uarr; 5%</span>
-          </div>
-          <p className="text-4xl font-black text-gray-900 dark:text-gray-100">₹5.8L</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Estimated payout for August</p>
-        </div>
-
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-6 hover:shadow-md transition-shadow border-l-4 border-l-orange-500">
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-gray-500 dark:text-gray-400 font-medium text-sm uppercase tracking-wide">Pending Actions</h3>
-          </div>
-          <p className="text-4xl font-black text-gray-900 dark:text-gray-100">12</p>
-          <div className="text-sm mt-2 flex gap-3 font-medium">
-            <Link href="/leave" className="text-orange-600 hover:underline">8 Leaves</Link>
-            <span className="text-gray-300">|</span>
-            <Link href="#" className="text-orange-600 hover:underline">4 Documents</Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Salary Trends Chart */}
-        <div className="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-6">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">Salary Trends (Last 6 Months)</h3>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={salaryData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6b7280' }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6b7280' }} tickFormatter={(val) => `₹${val/1000}k`} />
-                <Tooltip 
-                  cursor={{ fill: '#f3f4f6' }}
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  formatter={(value: any) => [`₹${Number(value).toLocaleString()}`, 'Total Salary']}
-                />
-                <Bar dataKey="amount" fill="#f97316" radius={[4, 4, 0, 0]} maxBarSize={50} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Headcount Donut Chart */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-6 flex flex-col">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">Headcount by Dept</h3>
-          <div className="flex-1 min-h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={deptData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {deptData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                />
-                <Legend verticalAlign="bottom" height={36} iconType="circle" />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-      </div>
-
-      {/* Bottom Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Quick Actions */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col">
-          <div className="p-6 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Quick Actions</h3>
-          </div>
-          <div className="p-4 grid grid-cols-2 gap-4 flex-1">
-            <Link href="/employees" className="flex flex-col items-center justify-center p-6 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-xl transition-colors border border-orange-100">
-              <span className="text-2xl mb-2">👥</span>
-              <span className="font-bold">Add Employee</span>
-            </Link>
-            <Link href="/leave" className="flex flex-col items-center justify-center p-6 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl transition-colors border border-green-100">
-              <span className="text-2xl mb-2">✅</span>
-              <span className="font-bold">Approve Leaves</span>
-            </Link>
-            <Link href="/settings/payroll" className="flex flex-col items-center justify-center p-6 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-xl transition-colors border border-purple-100">
-              <span className="text-2xl mb-2">⚙️</span>
-              <span className="font-bold">Payroll Settings</span>
-            </Link>
-            <Link href="/attendance" className="flex flex-col items-center justify-center p-6 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-xl transition-colors border border-orange-100">
-              <span className="text-2xl mb-2">⏱️</span>
-              <span className="font-bold">Fix Attendance</span>
-            </Link>
-          </div>
-        </div>
-
-        {/* Live Activity Feed */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col">
-          <div className="p-6 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 flex justify-between items-center">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Live Activity Feed</h3>
-            <span className="flex h-3 w-3 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-            </span>
-          </div>
-          <div className="p-6 flex-1 overflow-auto max-h-[350px]">
-            <div className="space-y-6">
-              <div className="flex gap-4 relative">
-                <div className="absolute top-8 left-4 w-[2px] h-full bg-gray-100 dark:bg-gray-800 -z-10"></div>
-                <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs shrink-0">AK</div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Arun Kumar <span className="text-gray-500 dark:text-gray-400 font-normal">applied for Sick Leave</span></p>
-                  <p className="text-xs text-gray-400 mt-1">10 minutes ago</p>
-                </div>
-              </div>
-              <div className="flex gap-4 relative">
-                <div className="absolute top-8 left-4 w-[2px] h-full bg-gray-100 dark:bg-gray-800 -z-10"></div>
-                <div className="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-xs shrink-0">HR</div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Meena Patel <span className="text-gray-500 dark:text-gray-400 font-normal">verified Aadhar Card for</span> Rahul Sharma</p>
-                  <p className="text-xs text-gray-400 mt-1">45 minutes ago</p>
-                </div>
-              </div>
-              <div className="flex gap-4 relative">
-                <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-xs shrink-0">SYS</div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">System <span className="text-gray-500 dark:text-gray-400 font-normal">flagged 3 late arrivals in Engineering</span></p>
-                  <p className="text-xs text-gray-400 mt-1">2 hours ago</p>
-                </div>
-              </div>
+          
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200 dark:border-gray-800"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white dark:bg-gray-900 text-gray-500">Or continue with</span>
             </div>
           </div>
-        </div>
 
+          <button 
+            type="button"
+            className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            Google
+          </button>
+        </form>
+
+        <p className="mt-8 text-center text-sm text-gray-600 dark:text-gray-400">
+          Don't have an account? <a href="#" className="font-medium text-orange-600 hover:text-orange-500 dark:text-orange-400 dark:hover:text-orange-300">Request access</a>
+        </p>
       </div>
 
     </div>
