@@ -8,7 +8,7 @@
 // (employees, salary-structures, payroll/runs, holidays) all require
 // requireCompanyAdmin on the backend.
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://zivira-labs-backend-1.onrender.com/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://zivira-backend-7qkt.onrender.com/api";
 const TOKEN_KEY = "zivira.hr.token";
 
 export type Employee = {
