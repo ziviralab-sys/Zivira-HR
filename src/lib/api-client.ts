@@ -61,10 +61,52 @@ export type PayrollRun = {
   loanDeduction: number;
   arrears: number;
   estimatedTax: number;
+  // Phase 2 "Advanced Statutory Calculations" + "OT" — see statutory-rule.model.ts.
+  pfEmployee: number;
+  pfEmployer: number;
+  professionalTax: number;
+  esiEmployee: number;
+  esiEmployer: number;
+  otHours: number;
+  otAmount: number;
   netPay: number;
   status: "DRAFT" | "HR_APPROVED" | "LOCKED";
   approvedBy?: string | null;
   approvedAt?: string | null;
+};
+
+export type ProfessionalTaxSlab = { minGross: number; maxGross: number | null; amount: number };
+
+// Phase 2 "Advanced Statutory Calculations" + the old mock UI's "Payroll
+// Rules Engine" — one editable ACTIVE rule set per tenant.
+export type StatutoryRule = {
+  id: string;
+  pfEnabled: boolean;
+  pfEmployeeRate: number;
+  pfEmployerRate: number;
+  pfWageCeiling: number;
+  ptEnabled: boolean;
+  ptSlabs: ProfessionalTaxSlab[];
+  esiEnabled: boolean;
+  esiEmployeeRate: number;
+  esiEmployerRate: number;
+  esiWageCeiling: number;
+  otEnabled: boolean;
+  standardShiftHours: number;
+  otRatePerHour: number;
+  status: "ACTIVE" | "INACTIVE";
+};
+
+// Phase 2 "Comp-Off" item.
+export type CompOff = {
+  id: string;
+  employeeCode: string;
+  employeeName?: string | null;
+  earnedDate: string;
+  reason: string;
+  expiresOn?: string | null;
+  status: "AVAILABLE" | "USED" | "EXPIRED";
+  usedInLeaveId?: string | null;
 };
 
 export type Holiday = {
@@ -105,6 +147,8 @@ export type Attendance = {
   employeeCode: string;
   attendanceDate: string;
   status: "PRESENT" | "ABSENT" | "LEAVE";
+  checkInAt?: string | null;
+  checkOutAt?: string | null;
 };
 
 export type LeaveApplication = {
@@ -117,6 +161,8 @@ export type LeaveApplication = {
   days: number;
   reason?: string | null;
   isLWP: boolean;
+  isCompOff?: boolean;
+  compOffId?: string | null;
   status: "PENDING" | "APPROVED" | "REJECTED";
   approvedBy?: string | null;
   approvedAt?: string | null;
@@ -166,9 +212,36 @@ export type PayrollSummary = {
   incentive: number;
   arrears: number;
   estimatedTax: number;
+  pfEmployee: number;
+  pfEmployer: number;
+  professionalTax: number;
+  esiEmployee: number;
+  esiEmployer: number;
+  otHours: number;
+  otAmount: number;
   draft: number;
   hrApproved: number;
   locked: number;
+};
+
+export type StatutorySummary = {
+  month: string;
+  rows: { employeeCode: string; employeeName: string | null; basic: number; pfEmployee: number; pfEmployer: number; professionalTax: number; esiEmployee: number; esiEmployer: number }[];
+  totals: { pfEmployee: number; pfEmployer: number; professionalTax: number; esiEmployee: number; esiEmployer: number };
+};
+
+export type OtSummary = {
+  month: string;
+  rows: { employeeCode: string; employeeName: string | null; otHours: number; otAmount: number }[];
+  totalHours: number;
+  totalAmount: number;
+};
+
+export type CompOffSummary = {
+  rows: CompOff[];
+  available: number;
+  used: number;
+  expired: number;
 };
 
 type ApiEnvelope<T> = { data: T; [key: string]: unknown };
@@ -259,6 +332,17 @@ export const apiClient = {
 
   holidays: () => request<Holiday[]>("/company/holidays"),
 
+  // Payroll Rules Engine (Phase 2 "Advanced Statutory Calculations" + the
+  // old mock UI's editable PF/Professional-Tax screen).
+  payrollRules: () => request<StatutoryRule>("/company/payroll/rules"),
+  updatePayrollRules: (input: Omit<StatutoryRule, "id" | "status">) =>
+    request<StatutoryRule>("/company/payroll/rules", { method: "PUT", body: JSON.stringify(input) }),
+
+  // Comp-Off (Phase 2 item) — HR grant + list.
+  compOffs: (employeeCode?: string) => request<CompOff[]>(`/company/comp-offs${employeeCode ? `?employeeCode=${employeeCode}` : ""}`),
+  grantCompOff: (input: { employeeCode: string; earnedDate: string; reason: string; expiresOn?: string }) =>
+    request<CompOff>("/company/comp-offs", { method: "POST", body: JSON.stringify(input) }),
+
   // Onboarding — Zivira_HR_Client_Requirement_1B.docx "complete employee
   // journey" (HR side).
   onboardingList: () => request<Onboarding[]>("/company/onboarding"),
@@ -278,7 +362,7 @@ export const apiClient = {
     request<Onboarding>(`/company/onboarding/${employeeCode}/complete`, { method: "PATCH" }),
 
   // Attendance Import (bulk) + list
-  importAttendance: (rows: { employeeCode: string; attendanceDate: string; status: "PRESENT" | "ABSENT" | "LEAVE" }[]) =>
+  importAttendance: (rows: { employeeCode: string; attendanceDate: string; status: "PRESENT" | "ABSENT" | "LEAVE"; checkInAt?: string; checkOutAt?: string }[]) =>
     request<{ imported: number; errors: { row: number; error: string }[] }>("/company/attendance/import", {
       method: "POST",
       body: JSON.stringify({ rows })
@@ -312,6 +396,10 @@ export const apiClient = {
   hrDashboard: () => request<HrDashboard>("/company/hr-dashboard"),
   payrollSummary: (month: string) => request<PayrollSummary>(`/company/reports/payroll-summary?month=${month}`),
   payrollExportUrl: (month: string) => `${API_BASE_URL}/company/reports/payroll-export?month=${month}`,
+  // Phase 2 "Advanced Reports"
+  statutorySummary: (month: string) => request<StatutorySummary>(`/company/reports/statutory-summary?month=${month}`),
+  otSummary: (month: string) => request<OtSummary>(`/company/reports/ot-summary?month=${month}`),
+  compOffSummary: () => request<CompOffSummary>("/company/reports/comp-off-summary"),
 
   // Employee Self-Service (ESS) — Zivira_HR_Client_Requirement_1B.docx
   // Employee Login portal. Every call here is scoped to the logged-in
@@ -326,9 +414,11 @@ export const apiClient = {
   essAttendance: (month?: string) => request<Attendance[]>(`/ess/attendance${month ? `?month=${month}` : ""}`),
   essLeave: () => request<LeaveApplication[]>("/ess/leave"),
   essLeaveTypes: () => request<{ id: string; leaveTypeDesc: string }[]>("/ess/leave/types"),
-  essApplyLeave: (input: { leaveType: string; fromDate: string; toDate: string; reason?: string }) =>
+  essApplyLeave: (input: { leaveType: string; fromDate: string; toDate: string; reason?: string; compOffId?: string }) =>
     request<LeaveApplication>("/ess/leave", { method: "POST", body: JSON.stringify(input) }),
   essPayslips: () => request<PayrollRun[]>("/ess/payslips"),
   essPayslip: (id: string) => request<PayrollRun>(`/ess/payslips/${id}`),
-  essLoans: () => request<Loan[]>("/ess/loans")
+  essLoans: () => request<Loan[]>("/ess/loans"),
+  // Phase 2 "Comp-Off" item — own balance only.
+  essCompOffs: () => request<CompOff[]>("/ess/comp-offs")
 };

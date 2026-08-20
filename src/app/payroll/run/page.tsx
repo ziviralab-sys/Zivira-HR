@@ -175,6 +175,9 @@ export default function RunPayrollPage() {
                 <th className="px-6 py-4 font-semibold text-right text-red-700">Loan EMI (₹)</th>
                 <th className="px-6 py-4 font-semibold text-right">Arrears (₹)</th>
                 <th className="px-6 py-4 font-semibold text-right text-red-700">Est. Tax (₹)</th>
+                <th className="px-6 py-4 font-semibold text-right text-red-700">PF (₹)</th>
+                <th className="px-6 py-4 font-semibold text-right text-red-700">PT (₹)</th>
+                <th className="px-6 py-4 font-semibold text-right text-green-700">OT (₹)</th>
                 <th className="px-6 py-4 font-bold text-right text-gray-900 dark:text-gray-100">Net Pay (₹)</th>
                 <th className="px-6 py-4 font-semibold text-center">Status</th>
                 <th className="px-6 py-4 font-semibold text-center">Actions</th>
@@ -182,10 +185,10 @@ export default function RunPayrollPage() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
-                <tr><td colSpan={12} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">Loading...</td></tr>
+                <tr><td colSpan={15} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">Loading...</td></tr>
               ) : filteredRuns.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={15} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                     No payroll rows for {month} yet. Click "Generate Payroll" to create them from active salary structures.
                   </td>
                 </tr>
@@ -204,6 +207,9 @@ export default function RunPayrollPage() {
                     <td className="px-6 py-4 text-right">{r.loanDeduction > 0 ? <span className="text-red-600 font-medium">-{r.loanDeduction.toLocaleString()}</span> : "0"}</td>
                     <td className="px-6 py-4 text-right">{r.arrears !== 0 ? r.arrears.toLocaleString() : "0"}</td>
                     <td className="px-6 py-4 text-right">{r.estimatedTax > 0 ? <span className="text-red-600 font-medium">-{r.estimatedTax.toLocaleString()}</span> : "0"}</td>
+                    <td className="px-6 py-4 text-right">{r.pfEmployee > 0 ? <span className="text-red-600 font-medium">-{r.pfEmployee.toLocaleString()}</span> : "0"}</td>
+                    <td className="px-6 py-4 text-right">{r.professionalTax > 0 ? <span className="text-red-600 font-medium">-{r.professionalTax.toLocaleString()}</span> : "0"}</td>
+                    <td className="px-6 py-4 text-right">{r.otAmount > 0 ? <span className="text-green-700 font-medium">+{r.otAmount.toLocaleString()} ({r.otHours}h)</span> : "0"}</td>
                     <td className="px-6 py-4 text-right font-bold text-gray-900 dark:text-gray-100">
                       <Link href={`/employees/${r.employeeCode}/payslip`} className="text-orange-600 hover:underline">{r.netPay.toLocaleString()}</Link>
                     </td>

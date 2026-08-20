@@ -158,10 +158,16 @@ export default function EmployeePayslipPage({ params }: { params: Promise<{ id: 
                     <span className="font-bold text-green-700">{run.incentive.toLocaleString("en-IN")}</span>
                   </div>
                 )}
+                {run.otAmount > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700 dark:text-gray-300">Overtime ({run.otHours}h)</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{run.otAmount.toLocaleString("en-IN")}</span>
+                  </div>
+                )}
               </div>
               <div className="bg-gray-50 dark:bg-gray-950 p-3 font-bold text-gray-900 dark:text-gray-100 border-t border-gray-300 flex justify-between">
                 <span>Gross Earnings (A)</span>
-                <span>{(run.grossEarnings + run.arrears + run.incentive).toLocaleString("en-IN")}</span>
+                <span>{(run.grossEarnings + run.arrears + run.incentive + run.otAmount).toLocaleString("en-IN")}</span>
               </div>
             </div>
 
@@ -182,6 +188,24 @@ export default function EmployeePayslipPage({ params }: { params: Promise<{ id: 
                     <span className="font-medium text-gray-900 dark:text-gray-100">{run.loanDeduction.toLocaleString("en-IN")}</span>
                   </div>
                 )}
+                {run.pfEmployee > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700 dark:text-gray-300">Provident Fund (PF)</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{run.pfEmployee.toLocaleString("en-IN")}</span>
+                  </div>
+                )}
+                {run.professionalTax > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700 dark:text-gray-300">Professional Tax (PT)</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{run.professionalTax.toLocaleString("en-IN")}</span>
+                  </div>
+                )}
+                {run.esiEmployee > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700 dark:text-gray-300">ESI</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{run.esiEmployee.toLocaleString("en-IN")}</span>
+                  </div>
+                )}
                 {run.estimatedTax > 0 && (
                   <div className="flex justify-between pt-2">
                     <div className="flex flex-col">
@@ -193,7 +217,7 @@ export default function EmployeePayslipPage({ params }: { params: Promise<{ id: 
               </div>
               <div className="bg-gray-50 dark:bg-gray-950 p-3 font-bold text-gray-900 dark:text-gray-100 border-t border-gray-300 flex justify-between">
                 <span>Total Deductions (B)</span>
-                <span>{(run.lwpDeduction + run.loanDeduction + run.estimatedTax).toLocaleString("en-IN")}</span>
+                <span>{(run.lwpDeduction + run.loanDeduction + run.pfEmployee + run.professionalTax + run.esiEmployee + run.estimatedTax).toLocaleString("en-IN")}</span>
               </div>
             </div>
           </div>
@@ -206,7 +230,7 @@ export default function EmployeePayslipPage({ params }: { params: Promise<{ id: 
 
           {/* Note */}
           <div className="mt-12 text-center text-xs text-gray-400 border-t border-gray-100 dark:border-gray-800 pt-4">
-            This is a computer generated document and does not require a signature. Automated slab-based tax calculation is a Phase 2 item — the Estimated Tax figure above is HR-entered for visibility only.
+            This is a computer generated document and does not require a signature. PF, Professional Tax, ESI, and OT are computed from the Payroll Rules Engine (Settings &gt; Payroll). Automated income-tax slab calculation is a separate Phase 2 item — the Estimated Tax figure above is HR-entered for visibility only.
           </div>
 
         </div>

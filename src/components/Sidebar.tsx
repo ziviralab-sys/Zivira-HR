@@ -69,6 +69,10 @@ export default function Sidebar({ isCollapsed = false, setIsCollapsed = () => {}
           <span className="text-xl">📝</span>
           {!isCollapsed && <span className="ml-3">Onboarding</span>}
         </Link>
+        <Link href="/comp-offs" className={`flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${isCollapsed ? 'justify-center' : ''}`} title="Comp-Off">
+          <span className="text-xl">🎫</span>
+          {!isCollapsed && <span className="ml-3">Comp-Off</span>}
+        </Link>
         <Link href="/reports" className={`flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${isCollapsed ? 'justify-center' : ''}`} title="Reports">
           <span className="text-xl">📈</span>
           {!isCollapsed && <span className="ml-3">Reports</span>}

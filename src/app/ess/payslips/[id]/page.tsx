@@ -78,9 +78,10 @@ export default function ESSPayslipDetailPage({ params }: { params: Promise<{ id:
               <div className="flex justify-between"><span>Special Allowance</span><span className="font-medium">{run.allowance.toLocaleString("en-IN")}</span></div>
               {run.arrears !== 0 && <div className="flex justify-between"><span>Arrears</span><span className="font-medium">{run.arrears.toLocaleString("en-IN")}</span></div>}
               {run.incentive > 0 && <div className="flex justify-between"><span>Incentive</span><span className="font-medium text-green-700">{run.incentive.toLocaleString("en-IN")}</span></div>}
+              {run.otAmount > 0 && <div className="flex justify-between"><span>Overtime ({run.otHours}h)</span><span className="font-medium">{run.otAmount.toLocaleString("en-IN")}</span></div>}
             </div>
             <div className="bg-gray-50 dark:bg-gray-950 p-3 font-bold border-t border-gray-300 flex justify-between">
-              <span>Gross Earnings (A)</span><span>{(run.grossEarnings + run.arrears + run.incentive).toLocaleString("en-IN")}</span>
+              <span>Gross Earnings (A)</span><span>{(run.grossEarnings + run.arrears + run.incentive + run.otAmount).toLocaleString("en-IN")}</span>
             </div>
           </div>
           <div className="flex flex-col">
@@ -90,10 +91,13 @@ export default function ESSPayslipDetailPage({ params }: { params: Promise<{ id:
             <div className="p-4 space-y-3 text-sm flex-1">
               <div className="flex justify-between"><span>LWP Deduction</span><span className="font-medium">{run.lwpDeduction.toLocaleString("en-IN")}</span></div>
               {run.loanDeduction > 0 && <div className="flex justify-between"><span>Loan EMI</span><span className="font-medium">{run.loanDeduction.toLocaleString("en-IN")}</span></div>}
+              {run.pfEmployee > 0 && <div className="flex justify-between"><span>Provident Fund (PF)</span><span className="font-medium">{run.pfEmployee.toLocaleString("en-IN")}</span></div>}
+              {run.professionalTax > 0 && <div className="flex justify-between"><span>Professional Tax (PT)</span><span className="font-medium">{run.professionalTax.toLocaleString("en-IN")}</span></div>}
+              {run.esiEmployee > 0 && <div className="flex justify-between"><span>ESI</span><span className="font-medium">{run.esiEmployee.toLocaleString("en-IN")}</span></div>}
               {run.estimatedTax > 0 && <div className="flex justify-between"><span>Estimated Tax</span><span className="font-medium text-red-700">{run.estimatedTax.toLocaleString("en-IN")}</span></div>}
             </div>
             <div className="bg-gray-50 dark:bg-gray-950 p-3 font-bold border-t border-gray-300 flex justify-between">
-              <span>Total Deductions (B)</span><span>{(run.lwpDeduction + run.loanDeduction + run.estimatedTax).toLocaleString("en-IN")}</span>
+              <span>Total Deductions (B)</span><span>{(run.lwpDeduction + run.loanDeduction + run.pfEmployee + run.professionalTax + run.esiEmployee + run.estimatedTax).toLocaleString("en-IN")}</span>
             </div>
           </div>
         </div>

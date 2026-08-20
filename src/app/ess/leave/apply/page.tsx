@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { apiClient, type LeaveApplication } from "@/lib/api-client";
+import { apiClient, type LeaveApplication, type CompOff } from "@/lib/api-client";
 
 // Zivira_HR_Client_Requirement_1A.docx §25 Leave Management (employee
 // side): Leave Type -> Leave Request. Backed by GET/POST /ess/leave and
@@ -12,17 +12,20 @@ import { apiClient, type LeaveApplication } from "@/lib/api-client";
 export default function ESSLeaveApplyPage() {
   const [leaveTypes, setLeaveTypes] = useState<{ id: string; leaveTypeDesc: string }[]>([]);
   const [history, setHistory] = useState<LeaveApplication[]>([]);
+  const [compOffs, setCompOffs] = useState<CompOff[]>([]);
   const [leaveType, setLeaveType] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [reason, setReason] = useState("");
+  const [compOffId, setCompOffId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const load = () => {
-    Promise.all([apiClient.essLeaveTypes(), apiClient.essLeave()])
-      .then(([typesRes, leaveRes]) => {
+    Promise.all([apiClient.essLeaveTypes(), apiClient.essLeave(), apiClient.essCompOffs()])
+      .then(([typesRes, leaveRes, compRes]) => {
         setLeaveTypes(typesRes.data);
         setHistory(leaveRes.data);
+        setCompOffs(compRes.data.filter((c) => c.status === "AVAILABLE"));
       })
       .catch(() => {});
   };
@@ -45,9 +48,9 @@ export default function ESSLeaveApplyPage() {
     }
     setIsSubmitting(true);
     try {
-      await apiClient.essApplyLeave({ leaveType, fromDate, toDate, reason });
-      toast.success("Leave request submitted for HR approval.");
-      setLeaveType(""); setFromDate(""); setToDate(""); setReason("");
+      await apiClient.essApplyLeave({ leaveType, fromDate, toDate, reason, compOffId: compOffId || undefined });
+      toast.success(compOffId ? "Comp-Off leave request submitted for HR approval." : "Leave request submitted for HR approval.");
+      setLeaveType(""); setFromDate(""); setToDate(""); setReason(""); setCompOffId("");
       load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to submit leave request");
@@ -97,6 +100,23 @@ export default function ESSLeaveApplyPage() {
                 {leaveTypes.map((t) => <option key={t.id} value={t.leaveTypeDesc}>{t.leaveTypeDesc}</option>)}
               </select>
             </div>
+
+            {compOffs.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Spend a Comp-Off Credit (optional)</label>
+                <select
+                  value={compOffId}
+                  onChange={(e) => setCompOffId(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-600 focus:border-transparent outline-none transition-shadow text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900"
+                >
+                  <option value="">Don't use a Comp-Off credit</option>
+                  {compOffs.map((c) => (
+                    <option key={c.id} value={c.id}>Earned {c.earnedDate?.slice(0, 10)} — {c.reason}</option>
+                  ))}
+                </select>
+                {compOffId && <p className="text-xs text-gray-400 mt-1">This request will be paid time off, spending the selected Comp-Off credit instead of your leave balance.</p>}
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div>
