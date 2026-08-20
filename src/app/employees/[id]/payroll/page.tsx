@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import toast from "react-hot-toast";
 import { apiClient, type SalaryStructure, type Loan, type Arrear } from "@/lib/api-client";
 
-export default function EmployeePayrollPage({ params }: { params: { id: string } }) {
-  const employeeCode = params.id;
+export default function EmployeePayrollPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const employeeCode = id;
 
   const [structure, setStructure] = useState<SalaryStructure | null>(null);
   const [isLoading, setIsLoading] = useState(true);
