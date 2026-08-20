@@ -1,4 +1,43 @@
-﻿export default function CreatePasswordPage({ params }: { params: { token: string } }) {
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import { apiClient } from "@/lib/api-client";
+
+// Zivira_HR_Client_Requirement_1B.docx "CREATE PASSWORD" — the forced
+// first step after an Employee's temp-password login. Reached at
+// /onboarding/me (params.token is unused; the logged-in employee's own
+// JWT already identifies who this is — see POST /auth/change-password).
+export default function CreatePasswordPage({ params }: { params: { token: string } }) {
+  const router = useRouter();
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match.");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await apiClient.changePassword(currentPassword, newPassword);
+      toast.success("Password set. Let's start your onboarding.");
+      router.push("/onboarding/me/form");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to set password");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -12,7 +51,22 @@
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white dark:bg-gray-900 py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-gray-200 dark:border-gray-800">
-          <form className="space-y-6">
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Temporary Password
+              </label>
+              <div className="mt-1">
+                <input
+                  type="password"
+                  required
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                />
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 New Password
@@ -21,6 +75,9 @@
                 <input
                   type="password"
                   required
+                  minLength={6}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
                 />
               </div>
@@ -34,15 +91,21 @@
                 <input
                   type="password"
                   required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
                 />
               </div>
             </div>
 
             <div className="pt-2">
-              <a href={`/onboarding/${params.token}/form`} className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
-                Set Password & Continue
-              </a>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50"
+              >
+                {isSaving ? "Saving..." : "Set Password & Continue"}
+              </button>
             </div>
           </form>
         </div>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { clearToken } from "@/lib/api-client";
 
 export default function Sidebar({ isCollapsed = false, setIsCollapsed = () => {} }: { isCollapsed?: boolean, setIsCollapsed?: (val: boolean) => void }) {
   const pathname = usePathname();
@@ -64,6 +65,14 @@ export default function Sidebar({ isCollapsed = false, setIsCollapsed = () => {}
           <span className="text-xl">🏖️</span>
           {!isCollapsed && <span className="ml-3">Leave Management</span>}
         </Link>
+        <Link href="/onboarding" className={`flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${isCollapsed ? 'justify-center' : ''}`} title="Onboarding">
+          <span className="text-xl">📝</span>
+          {!isCollapsed && <span className="ml-3">Onboarding</span>}
+        </Link>
+        <Link href="/reports" className={`flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${isCollapsed ? 'justify-center' : ''}`} title="Reports">
+          <span className="text-xl">📈</span>
+          {!isCollapsed && <span className="ml-3">Reports</span>}
+        </Link>
         <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-800">
           <Link href="/payroll/run" className={`flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-900 dark:text-white font-medium ${isCollapsed ? 'justify-center' : ''}`} title="Run Payroll">
             <span className="text-xl">💳</span>
@@ -77,11 +86,7 @@ export default function Sidebar({ isCollapsed = false, setIsCollapsed = () => {}
       </nav>
       <div className={`p-4 pb-20 border-t border-gray-200 dark:border-gray-800 text-sm flex flex-col gap-4 ${isCollapsed ? 'items-center' : ''}`}>
         {!isCollapsed && <span className="text-gray-500 dark:text-gray-400 font-medium">Admin Portal</span>}
-        <Link href="/ess" className={`text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition-colors flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'}`} title="Switch to ESS View">
-          <span className="text-xl">📱</span>
-          {!isCollapsed && <span>ESS View &rarr;</span>}
-        </Link>
-        <button onClick={() => { document.cookie = 'auth=; Max-Age=0; path=/;'; window.location.href = '/'; }} className={`text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'}`} title="Sign Out">
+        <button onClick={() => { clearToken(); document.cookie = 'auth=; Max-Age=0; path=/;'; window.location.href = '/'; }} className={`text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'}`} title="Sign Out">
           <span className="text-xl">🚪</span>
           {!isCollapsed && <span>Sign Out</span>}
         </button>

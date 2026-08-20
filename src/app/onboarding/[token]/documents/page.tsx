@@ -1,6 +1,67 @@
-import Link from "next/link";
+"use client";
 
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import { apiClient, type Onboarding } from "@/lib/api-client";
+
+// Zivira_HR_Client_Requirement_1B.docx "FILL ONBOARDING" step 7/8
+// (Documents) + step 8 (Review/SUBMIT). No file-storage backend is
+// configured in this environment (documented Phase 1 limitation, same as
+// onboarding's "trigger mail") — uploading records the file's name as
+// metadata via POST /ess/onboarding/documents/:docName so HR can see what
+// was submitted, without actually storing file bytes.
 export default function EmployeeDocumentUploadPage() {
+  const router = useRouter();
+  const [onboarding, setOnboarding] = useState<Onboarding | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [busyDoc, setBusyDoc] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const load = () => {
+    setIsLoading(true);
+    apiClient
+      .essOnboarding()
+      .then((res) => setOnboarding(res.data))
+      .catch((err) => toast.error(err instanceof Error ? err.message : "Failed to load onboarding"))
+      .finally(() => setIsLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleUpload = async (docName: string, file: File | null) => {
+    if (!file) return;
+    setBusyDoc(docName);
+    try {
+      await apiClient.essUploadOnboardingDocument(docName, file.name);
+      toast.success(`${docName} uploaded.`);
+      load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to upload document");
+    } finally {
+      setBusyDoc(null);
+    }
+  };
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      await apiClient.essSubmitOnboarding();
+      toast.success("Onboarding submitted! HR will verify your documents.");
+      router.push("/ess");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to submit onboarding");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (isLoading) return <div className="min-h-screen flex items-center justify-center text-gray-400">Loading…</div>;
+
+  const documents = onboarding?.documents ?? [];
+  const allUploaded = documents.length > 0 && documents.every((d) => d.status !== "PENDING");
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex">
       {/* Onboarding Sidebar */}
@@ -9,31 +70,16 @@ export default function EmployeeDocumentUploadPage() {
         <nav className="space-y-4">
           <div className="flex items-center gap-3 text-green-600 font-medium">
             <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-sm">✓</div>
-            Personal Info
-          </div>
-          <div className="flex items-center gap-3 text-green-600 font-medium">
-            <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-sm">✓</div>
-            Address
-          </div>
-          <div className="flex items-center gap-3 text-green-600 font-medium">
-            <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-sm">✓</div>
-            Education
-          </div>
-          <div className="flex items-center gap-3 text-green-600 font-medium">
-            <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-sm">✓</div>
-            Experience
+            Personal Details
           </div>
           <div className="flex items-center gap-3 text-orange-600 font-medium">
-            <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center text-sm">5</div>
-            Documents
+            <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center text-sm">7</div>
+            Documents &amp; Review
           </div>
         </nav>
 
         <div className="mt-12 pt-6 border-t border-gray-100 dark:border-gray-800">
-          <div className="text-sm text-gray-500 dark:text-gray-400">Progress: 80%</div>
-          <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-            <div className="bg-orange-600 h-2 rounded-full" style={{ width: "80%" }}></div>
-          </div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">Status: {onboarding?.status.replace(/_/g, " ") ?? "—"}</div>
         </div>
       </div>
 
@@ -42,59 +88,53 @@ export default function EmployeeDocumentUploadPage() {
         <div className="max-w-3xl mx-auto">
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Upload Documents</h1>
-            <button className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 font-medium">
-              Save & Exit
-            </button>
           </div>
 
           <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-8">
-            <p className="text-gray-600 dark:text-gray-400 mb-6">Please upload clear PDF or image files for the following required documents.</p>
-            
+            <p className="text-gray-600 dark:text-gray-400 mb-6">Please upload clear PDF or image files for each required document.</p>
+
             <div className="space-y-4">
-              
-              {/* Aadhaar */}
-              <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-800 rounded-lg">
-                <div>
-                  <h3 className="font-semibold text-gray-800 dark:text-gray-200">Aadhaar Card <span className="text-red-500">*</span></h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Max size: 5MB</p>
+              {documents.map((doc) => (
+                <div key={doc.name} className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-800 rounded-lg">
+                  <div>
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-200">{doc.name} <span className="text-red-500">*</span></h3>
+                    {doc.status === "REJECTED" && doc.rejectReason ? (
+                      <p className="text-sm text-red-500">Rejected — {doc.rejectReason}. Please re-upload.</p>
+                    ) : (
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Max size: 5MB</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4">
+                    {doc.status !== "PENDING" && doc.status !== "REJECTED" && (
+                      <span className="text-sm font-medium text-green-600">{doc.fileName} ✓</span>
+                    )}
+                    <label className="px-4 py-2 border border-orange-600 text-orange-600 rounded-lg font-medium hover:bg-orange-50 transition-colors text-sm cursor-pointer">
+                      {busyDoc === doc.name ? "Uploading…" : doc.status === "PENDING" ? "Upload File" : "Replace"}
+                      <input
+                        type="file"
+                        className="hidden"
+                        disabled={busyDoc === doc.name || onboarding?.status === "SUBMITTED" || onboarding?.status === "COMPLETED"}
+                        onChange={(e) => handleUpload(doc.name, e.target.files?.[0] ?? null)}
+                      />
+                    </label>
+                  </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-medium text-green-600">Aadhaar.pdf ✓</span>
-                  <button className="text-orange-600 hover:text-orange-800 font-medium text-sm">Replace</button>
-                </div>
-              </div>
-
-              {/* PAN */}
-              <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-800 rounded-lg">
-                <div>
-                  <h3 className="font-semibold text-gray-800 dark:text-gray-200">PAN Card <span className="text-red-500">*</span></h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Max size: 5MB</p>
-                </div>
-                <button className="px-4 py-2 border border-orange-600 text-orange-600 rounded-lg font-medium hover:bg-orange-50 transition-colors text-sm">
-                  Upload File
-                </button>
-              </div>
-
-              {/* Degree */}
-              <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-800 rounded-lg">
-                <div>
-                  <h3 className="font-semibold text-gray-800 dark:text-gray-200">Degree Certificate <span className="text-red-500">*</span></h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Max size: 5MB</p>
-                </div>
-                <button className="px-4 py-2 border border-orange-600 text-orange-600 rounded-lg font-medium hover:bg-orange-50 transition-colors text-sm">
-                  Upload File
-                </button>
-              </div>
-
+              ))}
             </div>
 
             <div className="pt-8 mt-8 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
-              <Link href="#" className="text-gray-500 dark:text-gray-400 font-medium hover:text-gray-700 dark:text-gray-300">Back</Link>
-              <button className="px-8 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 shadow-sm text-lg">
-                Submit Onboarding
+              <Link href="/onboarding/me/form" className="text-gray-500 dark:text-gray-400 font-medium hover:text-gray-700 dark:text-gray-300">Back</Link>
+              <button
+                onClick={handleSubmit}
+                disabled={!allUploaded || isSubmitting || onboarding?.status === "SUBMITTED" || onboarding?.status === "COMPLETED"}
+                className="px-8 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 shadow-sm text-lg disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {onboarding?.status === "SUBMITTED" || onboarding?.status === "COMPLETED"
+                  ? "Already Submitted"
+                  : isSubmitting ? "Submitting…" : "Submit Onboarding"}
               </button>
             </div>
-            
+
           </div>
         </div>
       </div>

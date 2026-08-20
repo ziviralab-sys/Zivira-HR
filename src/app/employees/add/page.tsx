@@ -1,43 +1,63 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { apiClient } from "@/lib/api-client";
+import { apiClient, type Employee } from "@/lib/api-client";
 
 const ROLES = ["NBH", "BH", "RBM", "ZBM", "ABM", "SR_MR", "MR", "OTHER"] as const;
 
+// Zivira_HR_Client_Requirement_1A.docx Phase 1 MVP "Employee Master" —
+// the first step of the doc's "complete employee journey" (ADD EMPLOYEE ->
+// SAVE -> GENERATE ONBOARDING -> ...). Backed by POST /company/employees.
 export default function AddEmployeePage() {
   const router = useRouter();
+  const [existingEmployees, setExistingEmployees] = useState<Employee[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [form, setForm] = useState({
     employeeCode: "",
+    email: "",
     name: "",
     designation: "",
     division: "",
     territory: "",
+    role: "OTHER" as (typeof ROLES)[number],
+    joinDate: "",
     reportingManager: "",
-    role: "MR" as (typeof ROLES)[number],
     status: "ACTIVE" as "ACTIVE" | "INACTIVE"
   });
 
-  const update = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setForm((prev) => ({ ...prev, [key]: e.target.value }));
+  useEffect(() => {
+    apiClient.employees().then((res) => setExistingEmployees(res.data)).catch(() => {});
+  }, []);
+
+  const update = (field: keyof typeof form, value: string) => setForm((p) => ({ ...p, [field]: value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.employeeCode || !form.name || !form.designation || !form.division || !form.territory) {
-      toast.error("Please fill in all required fields.");
+      toast.error("Employee Code, Name, Designation, Division, and Territory are required.");
       return;
     }
     setIsSaving(true);
     try {
-      await apiClient.createEmployee(form);
-      toast.success("Employee added successfully!");
-      router.push("/employees");
+      await apiClient.createEmployee({
+        employeeCode: form.employeeCode,
+        name: form.name,
+        designation: form.designation,
+        division: form.division,
+        territory: form.territory,
+        role: form.role,
+        reportingManager: form.reportingManager || undefined,
+        email: form.email || null,
+        joinDate: form.joinDate || null,
+        status: form.status
+      });
+      toast.success("Employee created.");
+      router.push(`/employees/${form.employeeCode}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to add employee");
+      toast.error(err instanceof Error ? err.message : "Failed to create employee");
     } finally {
       setIsSaving(false);
     }
@@ -55,51 +75,64 @@ export default function AddEmployeePage() {
       </div>
 
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-8">
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form className="space-y-8" onSubmit={handleSubmit}>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Employee Code</label>
-              <input type="text" required value={form.employeeCode} onChange={update("employeeCode")} placeholder="e.g. EMP1025" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Employee Code <span className="text-red-500">*</span></label>
+              <input type="text" required placeholder="e.g. EMP00011" value={form.employeeCode} onChange={(e) => update("employeeCode", e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name</label>
-              <input type="text" required value={form.name} onChange={update("name")} placeholder="Full Name" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Official Email</label>
+              <input type="email" placeholder="name@zivira.com" value={form.email} onChange={(e) => update("email", e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Designation</label>
-              <input type="text" required value={form.designation} onChange={update("designation")} placeholder="e.g. Full Stack Developer" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name <span className="text-red-500">*</span></label>
+              <input type="text" required placeholder="Full Name" value={form.name} onChange={(e) => update("name", e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Division</label>
-              <input type="text" required value={form.division} onChange={update("division")} placeholder="e.g. Cardiology" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Designation <span className="text-red-500">*</span></label>
+              <input type="text" required placeholder="e.g. Medical Representative" value={form.designation} onChange={(e) => update("designation", e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Territory</label>
-              <input type="text" required value={form.territory} onChange={update("territory")} placeholder="e.g. Chennai North" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Division <span className="text-red-500">*</span></label>
+              <input type="text" required placeholder="e.g. Cardiology" value={form.division} onChange={(e) => update("division", e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Reporting Manager (Employee Code)</label>
-              <input type="text" value={form.reportingManager} onChange={update("reportingManager")} placeholder="e.g. EMP001" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Territory <span className="text-red-500">*</span></label>
+              <input type="text" required placeholder="e.g. Chennai North" value={form.territory} onChange={(e) => update("territory", e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Role</label>
-              <select value={form.role} onChange={update("role")} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors bg-white dark:bg-gray-900">
-                {ROLES.map((r) => (
-                  <option key={r} value={r}>{r}</option>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Role <span className="text-red-500">*</span></label>
+              <select value={form.role} onChange={(e) => update("role", e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors bg-white dark:bg-gray-900">
+                {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Joining Date</label>
+              <input type="date" value={form.joinDate} onChange={(e) => update("joinDate", e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Reporting Manager</label>
+              <select value={form.reportingManager} onChange={(e) => update("reportingManager", e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors bg-white dark:bg-gray-900">
+                <option value="">Select Manager</option>
+                {existingEmployees.map((emp) => (
+                  <option key={emp.employeeCode} value={emp.employeeCode}>{emp.employeeCode} - {emp.name}</option>
                 ))}
               </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Employee Status</label>
-              <select value={form.status} onChange={update("status")} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors bg-white dark:bg-gray-900">
+              <select value={form.status} onChange={(e) => update("status", e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors bg-white dark:bg-gray-900">
                 <option value="ACTIVE">Active</option>
                 <option value="INACTIVE">Inactive</option>
               </select>
@@ -110,7 +143,7 @@ export default function AddEmployeePage() {
             <Link href="/employees" className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:bg-gray-950 transition-colors">
               Cancel
             </Link>
-            <button type="submit" disabled={isSaving} className={`px-6 py-2 rounded-lg font-medium transition-colors shadow-sm ${isSaving ? 'bg-orange-400 text-white cursor-not-allowed' : 'bg-orange-600 text-white hover:bg-orange-700'}`}>
+            <button type="submit" disabled={isSaving} className="px-6 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors shadow-sm disabled:opacity-50">
               {isSaving ? "Saving..." : "Save Employee"}
             </button>
           </div>

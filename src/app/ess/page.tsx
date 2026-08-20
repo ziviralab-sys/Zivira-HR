@@ -1,21 +1,61 @@
-import Link from "next/link";
+"use client";
 
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { apiClient, getStoredUser, type Employee, type Attendance, type PayrollRun, type Holiday } from "@/lib/api-client";
+
+// Zivira_HR_Client_Requirement_1A.docx §31 RBAC — Employee sees own
+// Profile/Attendance/Leave/Payslip/Tax/Loans/Documents only. Everything
+// below is scoped to the logged-in employee via /ess/* (requireEmployee).
 export default function EmployeeDashboardPage() {
+  const [profile, setProfile] = useState<(Employee & { onboardingStatus: string }) | null>(null);
+  const [attendance, setAttendance] = useState<Attendance[]>([]);
+  const [payslips, setPayslips] = useState<PayrollRun[]>([]);
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const month = new Date().toISOString().slice(0, 7);
+    Promise.all([
+      apiClient.essProfile(),
+      apiClient.essAttendance(month),
+      apiClient.essPayslips(),
+      apiClient.holidays()
+    ])
+      .then(([profileRes, attRes, paysRes, holRes]) => {
+        setProfile(profileRes.data);
+        setAttendance(attRes.data);
+        setPayslips(paysRes.data);
+        setHolidays(holRes.data.slice(0, 4));
+      })
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const displayName = String(getStoredUser()?.displayName ?? profile?.name ?? "there");
+  const firstName = displayName.split(" ")[0];
+  const presentDays = attendance.filter((a) => a.status === "PRESENT").length;
+  const latestPayslip = payslips[0] ?? null;
+
   return (
     <>
-
-      {/* Main Content */}
       <main className="w-full px-6 pt-24 pb-12 space-y-8">
-        
+
         {/* Welcome Section */}
         <div className="bg-gradient-to-r from-orange-600 to-orange-700 rounded-2xl shadow-md p-8 text-white flex flex-col md:flex-row justify-between items-center gap-6">
           <div>
-            <h2 className="text-3xl font-bold mb-2">Good morning, Arun! 👋</h2>
-            <p className="text-orange-100 text-lg">Here is your quick summary for August 2026.</p>
+            <h2 className="text-3xl font-bold mb-2">Welcome, {firstName}! 👋</h2>
+            <p className="text-orange-100 text-lg">
+              {profile?.onboardingStatus && profile.onboardingStatus !== "COMPLETED"
+                ? `Your onboarding is ${profile.onboardingStatus.replace(/_/g, " ").toLowerCase()}.`
+                : "Here is your quick summary."}
+            </p>
           </div>
-          <button className="bg-white dark:bg-gray-900 text-orange-700 hover:bg-orange-50 px-6 py-3 rounded-xl font-bold shadow-sm transition-colors whitespace-nowrap">
-            Clock In Today
-          </button>
+          {profile?.onboardingStatus && profile.onboardingStatus !== "COMPLETED" && profile.onboardingStatus !== "SUBMITTED" && (
+            <Link href="/onboarding/me/form" className="bg-white dark:bg-gray-900 text-orange-700 hover:bg-orange-50 px-6 py-3 rounded-xl font-bold shadow-sm transition-colors whitespace-nowrap">
+              Continue Onboarding
+            </Link>
+          )}
         </div>
 
         {/* Quick Stats Grid */}
@@ -28,13 +68,10 @@ export default function EmployeeDashboardPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-gray-500 dark:text-gray-400 font-medium text-sm uppercase tracking-wide">Attendance</h3>
-                <p className="text-2xl font-black text-gray-900 dark:text-gray-100">14 <span className="text-sm font-medium text-gray-500 dark:text-gray-400">/ 22 Days</span></p>
+                <h3 className="text-gray-500 dark:text-gray-400 font-medium text-sm uppercase tracking-wide">Attendance (This Month)</h3>
+                <p className="text-2xl font-black text-gray-900 dark:text-gray-100">{isLoading ? "…" : presentDays} <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Days Present</span></p>
               </div>
             </div>
-            <Link href="#" className="text-orange-600 text-sm font-semibold hover:underline flex items-center gap-1">
-              View Calendar <span aria-hidden="true">&rarr;</span>
-            </Link>
           </div>
 
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-6 hover:shadow-md transition-shadow">
@@ -45,8 +82,8 @@ export default function EmployeeDashboardPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-gray-500 dark:text-gray-400 font-medium text-sm uppercase tracking-wide">Leave Balance</h3>
-                <p className="text-2xl font-black text-gray-900 dark:text-gray-100">8 <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Days</span></p>
+                <h3 className="text-gray-500 dark:text-gray-400 font-medium text-sm uppercase tracking-wide">Leave</h3>
+                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">Apply or review status</p>
               </div>
             </div>
             <Link href="/ess/leave/apply" className="text-orange-600 text-sm font-semibold hover:underline flex items-center gap-1">
@@ -63,7 +100,7 @@ export default function EmployeeDashboardPage() {
               </div>
               <div>
                 <h3 className="text-gray-500 dark:text-gray-400 font-medium text-sm uppercase tracking-wide">Last Payslip</h3>
-                <p className="text-2xl font-black text-gray-900 dark:text-gray-100">July</p>
+                <p className="text-2xl font-black text-gray-900 dark:text-gray-100">{latestPayslip ? latestPayslip.month : "—"}</p>
               </div>
             </div>
             <Link href="/ess/payslips" className="text-orange-600 text-sm font-semibold hover:underline flex items-center gap-1">
@@ -72,57 +109,20 @@ export default function EmployeeDashboardPage() {
           </div>
         </div>
 
-        {/* Announcements & Upcoming */}
+        {/* Upcoming Holidays */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-          
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-6">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6 border-b border-gray-100 dark:border-gray-800 pb-4">Company Announcements</h3>
-            <div className="space-y-6">
-              <div className="flex gap-4">
-                <div className="w-2 h-2 mt-2 bg-orange-500 rounded-full shrink-0"></div>
-                <div>
-                  <h4 className="font-bold text-gray-800 dark:text-gray-200">Q3 Townhall Meeting</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Join us on Friday at 4 PM for the Q3 financial review and updates.</p>
-                  <p className="text-xs text-gray-400 mt-2">Posted 2 days ago</p>
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <div className="w-2 h-2 mt-2 bg-green-500 rounded-full shrink-0"></div>
-                <div>
-                  <h4 className="font-bold text-gray-800 dark:text-gray-200">New Health Insurance Policy</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Please review the updated policy documents in your ESS portal.</p>
-                  <p className="text-xs text-gray-400 mt-2">Posted 1 week ago</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6 border-b border-gray-100 dark:border-gray-800 pb-4">Upcoming Holidays</h3>
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-950 rounded-lg">
-                <div className="flex items-center gap-4">
-                  <div className="bg-white dark:bg-gray-900 p-2 rounded text-center border border-gray-200 dark:border-gray-800 min-w-[50px]">
-                    <span className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Aug</span>
-                    <span className="block text-xl font-black text-gray-900 dark:text-gray-100">15</span>
-                  </div>
-                  <span className="font-bold text-gray-800 dark:text-gray-200">Independence Day</span>
+              {holidays.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">No holidays configured yet.</p>}
+              {holidays.map((h) => (
+                <div key={h.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-950 rounded-lg">
+                  <span className="font-bold text-gray-800 dark:text-gray-200">{h.otherHolidayDescription ?? h.weekendHoliday ?? h.stateName}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{h.otherHolidayDate ? String(h.otherHolidayDate).slice(0, 10) : h.stateName}</span>
                 </div>
-                <span className="text-sm text-gray-500 dark:text-gray-400">Saturday</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-950 rounded-lg">
-                <div className="flex items-center gap-4">
-                  <div className="bg-white dark:bg-gray-900 p-2 rounded text-center border border-gray-200 dark:border-gray-800 min-w-[50px]">
-                    <span className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Nov</span>
-                    <span className="block text-xl font-black text-gray-900 dark:text-gray-100">11</span>
-                  </div>
-                  <span className="font-bold text-gray-800 dark:text-gray-200">Diwali</span>
-                </div>
-                <span className="text-sm text-gray-500 dark:text-gray-400">Wednesday</span>
-              </div>
+              ))}
             </div>
           </div>
-
         </div>
 
       </main>

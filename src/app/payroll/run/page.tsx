@@ -71,6 +71,26 @@ export default function RunPayrollPage() {
     }
   };
 
+  const handleEditIncentiveTax = async (run: PayrollRun) => {
+    const incentiveInput = window.prompt("Incentive amount (₹)?", String(run.incentive ?? 0));
+    if (incentiveInput === null) return;
+    const taxInput = window.prompt("Estimated Tax — Basic Tax Visibility (₹)?", String(run.estimatedTax ?? 0));
+    if (taxInput === null) return;
+    const incentive = Number(incentiveInput);
+    const estimatedTax = Number(taxInput);
+    if (Number.isNaN(incentive) || Number.isNaN(estimatedTax)) {
+      toast.error("Enter valid numbers.");
+      return;
+    }
+    try {
+      await apiClient.updatePayrollRun(run.id, { incentive, estimatedTax });
+      toast.success("Payroll row updated.");
+      load(month);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update payroll row");
+    }
+  };
+
   const handleLockAll = async () => {
     const approved = runs.filter((r) => r.status === "HR_APPROVED");
     if (approved.length === 0) {
@@ -151,6 +171,10 @@ export default function RunPayrollPage() {
                 <th className="px-6 py-4 font-semibold text-right">Working Days</th>
                 <th className="px-6 py-4 font-semibold text-right text-red-700">LWP Days</th>
                 <th className="px-6 py-4 font-semibold text-right text-red-700">LWP Ded. (₹)</th>
+                <th className="px-6 py-4 font-semibold text-right text-green-700">Incentive (₹)</th>
+                <th className="px-6 py-4 font-semibold text-right text-red-700">Loan EMI (₹)</th>
+                <th className="px-6 py-4 font-semibold text-right">Arrears (₹)</th>
+                <th className="px-6 py-4 font-semibold text-right text-red-700">Est. Tax (₹)</th>
                 <th className="px-6 py-4 font-bold text-right text-gray-900 dark:text-gray-100">Net Pay (₹)</th>
                 <th className="px-6 py-4 font-semibold text-center">Status</th>
                 <th className="px-6 py-4 font-semibold text-center">Actions</th>
@@ -158,10 +182,10 @@ export default function RunPayrollPage() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
-                <tr><td colSpan={8} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">Loading...</td></tr>
+                <tr><td colSpan={12} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">Loading...</td></tr>
               ) : filteredRuns.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={12} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                     No payroll rows for {month} yet. Click "Generate Payroll" to create them from active salary structures.
                   </td>
                 </tr>
@@ -176,6 +200,10 @@ export default function RunPayrollPage() {
                     <td className="px-6 py-4 text-right">{r.workingDays}</td>
                     <td className="px-6 py-4 text-right">{r.lwpDays > 0 ? <span className="text-red-600 font-medium">{r.lwpDays}</span> : "0"}</td>
                     <td className="px-6 py-4 text-right">{r.lwpDeduction > 0 ? <span className="text-red-600 font-medium">-{r.lwpDeduction.toLocaleString()}</span> : "0"}</td>
+                    <td className="px-6 py-4 text-right">{r.incentive > 0 ? <span className="text-green-700 font-medium">+{r.incentive.toLocaleString()}</span> : "0"}</td>
+                    <td className="px-6 py-4 text-right">{r.loanDeduction > 0 ? <span className="text-red-600 font-medium">-{r.loanDeduction.toLocaleString()}</span> : "0"}</td>
+                    <td className="px-6 py-4 text-right">{r.arrears !== 0 ? r.arrears.toLocaleString() : "0"}</td>
+                    <td className="px-6 py-4 text-right">{r.estimatedTax > 0 ? <span className="text-red-600 font-medium">-{r.estimatedTax.toLocaleString()}</span> : "0"}</td>
                     <td className="px-6 py-4 text-right font-bold text-gray-900 dark:text-gray-100">
                       <Link href={`/employees/${r.employeeCode}/payslip`} className="text-orange-600 hover:underline">{r.netPay.toLocaleString()}</Link>
                     </td>
@@ -188,7 +216,10 @@ export default function RunPayrollPage() {
                         {r.status.replace("_", " ")}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-6 py-4 text-center space-x-3">
+                      {r.status !== "LOCKED" && (
+                        <button onClick={() => handleEditIncentiveTax(r)} className="font-medium text-xs text-gray-600 dark:text-gray-400 hover:underline">Edit</button>
+                      )}
                       {r.status === "DRAFT" && (
                         <button onClick={() => handleApprove(r.id)} className="font-medium text-xs text-orange-600 hover:underline">Approve</button>
                       )}
