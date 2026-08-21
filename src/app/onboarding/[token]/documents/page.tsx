@@ -7,11 +7,23 @@ import toast from "react-hot-toast";
 import { apiClient, type Onboarding } from "@/lib/api-client";
 
 // Zivira_HR_Client_Requirement_1B.docx "FILL ONBOARDING" step 7/8
-// (Documents) + step 8 (Review/SUBMIT). No file-storage backend is
-// configured in this environment (documented Phase 1 limitation, same as
-// onboarding's "trigger mail") — uploading records the file's name as
-// metadata via POST /ess/onboarding/documents/:docName so HR can see what
-// was submitted, without actually storing file bytes.
+// (Documents) + step 8 (Review/SUBMIT). The file's actual bytes are read
+// client-side and sent as a base64 data: URL to POST
+// /ess/onboarding/documents/:docName, capped at 3MB (enforced here AND
+// re-checked server-side) — so what HR reviews is the real document, not
+// just a filename, and so the review step can show a genuine preview
+// before the employee submits.
+const MAX_DOCUMENT_BYTES = 3 * 1024 * 1024; // 3MB
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error ?? new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function EmployeeDocumentUploadPage() {
   const router = useRouter();
   const [onboarding, setOnboarding] = useState<Onboarding | null>(null);
@@ -32,9 +44,14 @@ export default function EmployeeDocumentUploadPage() {
 
   const handleUpload = async (docName: string, file: File | null) => {
     if (!file) return;
+    if (file.size > MAX_DOCUMENT_BYTES) {
+      toast.error(`${file.name} is ${(file.size / (1024 * 1024)).toFixed(1)}MB — the limit is 3MB. Please upload a smaller file.`);
+      return;
+    }
     setBusyDoc(docName);
     try {
-      await apiClient.essUploadOnboardingDocument(docName, file.name);
+      const dataUrl = await readFileAsDataUrl(file);
+      await apiClient.essUploadOnboardingDocument(docName, file.name, dataUrl, file.type || "application/octet-stream", file.size);
       toast.success(`${docName} uploaded.`);
       load();
     } catch (err) {
@@ -101,12 +118,24 @@ export default function EmployeeDocumentUploadPage() {
                     {doc.status === "REJECTED" && doc.rejectReason ? (
                       <p className="text-sm text-red-500">Rejected — {doc.rejectReason}. Please re-upload.</p>
                     ) : (
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Max size: 5MB</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Max size: 3MB</p>
                     )}
                   </div>
                   <div className="flex items-center gap-4">
                     {doc.status !== "PENDING" && doc.status !== "REJECTED" && (
-                      <span className="text-sm font-medium text-green-600">{doc.fileName} ✓</span>
+                      doc.fileData ? (
+                        <a
+                          href={doc.fileData}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-sm font-medium text-green-600 hover:underline"
+                          title="Review the file you uploaded"
+                        >
+                          {doc.fileName} ✓ (Preview)
+                        </a>
+                      ) : (
+                        <span className="text-sm font-medium text-green-600">{doc.fileName} ✓</span>
+                      )
                     )}
                     <label className="px-4 py-2 border border-orange-600 text-orange-600 rounded-lg font-medium hover:bg-orange-50 transition-colors text-sm cursor-pointer">
                       {busyDoc === doc.name ? "Uploading…" : doc.status === "PENDING" ? "Upload File" : "Replace"}

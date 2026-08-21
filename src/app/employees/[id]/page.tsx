@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, use } from "react";
 import toast from "react-hot-toast";
-import { apiClient, type Employee, type Onboarding, type Attendance, type LeaveApplication } from "@/lib/api-client";
+import { apiClient, addSavedCredential, type Employee, type Onboarding, type Attendance, type LeaveApplication } from "@/lib/api-client";
 
 export default function EmployeeProfilePage({ params }: { params: Promise<{ id: string }> }) {
   // In Next.js 15+, params is a Promise in client components and must be unwrapped
@@ -16,6 +16,7 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
   const [leave, setLeave] = useState<LeaveApplication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isBusy, setIsBusy] = useState(false);
+  const [credentials, setCredentials] = useState<{ username: string; tempPassword: string } | null>(null);
 
   const load = () => {
     setIsLoading(true);
@@ -60,7 +61,10 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
       const res = await apiClient.triggerOnboardingMail(employeeId);
       const creds = (res as unknown as { credentials?: { username: string; tempPassword: string } }).credentials;
       if (creds) {
-        toast.success(`Login credentials — Employee ID: ${creds.username}, Temp Password: ${creds.tempPassword}. No email service is configured; share these directly.`, { duration: 12000 });
+        // Stays open until HR explicitly chooses Save or Dismiss — it must
+        // not auto-vanish, since this is the only place the temp password
+        // is ever shown.
+        setCredentials(creds);
       } else {
         toast.success("Onboarding email triggered.");
       }
@@ -80,8 +84,56 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
     return <div className="max-w-5xl mx-auto py-12 text-center text-gray-400">Employee {employeeId} not found.</div>;
   }
 
+  const handleSaveCredentials = () => {
+    if (!credentials) return;
+    addSavedCredential({
+      employeeCode: employeeId,
+      employeeName: employee.name,
+      username: credentials.username,
+      tempPassword: credentials.tempPassword
+    });
+    toast.success("Saved — you'll find these under the notification bell.");
+    setCredentials(null);
+  };
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
+      {credentials && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setCredentials(null)}>
+          <div
+            className="bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-800 w-full max-w-md p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wide mb-1">Login Credentials Generated</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">No email service is configured — share these with the employee directly, or Save to keep them under your notifications.</p>
+            <div className="bg-gray-50 dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800 p-4 space-y-2 mb-6">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500 dark:text-gray-400">Employee ID</span>
+                <span className="font-mono font-semibold text-gray-900 dark:text-gray-100">{credentials.username}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500 dark:text-gray-400">Temp Password</span>
+                <span className="font-mono font-semibold text-gray-900 dark:text-gray-100">{credentials.tempPassword}</span>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setCredentials(null)}
+                className="px-5 py-2 border border-gray-300 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
+              >
+                Disappear
+              </button>
+              <button
+                onClick={handleSaveCredentials}
+                className="px-5 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Employee Profile</h1>
         <div className="flex gap-3">

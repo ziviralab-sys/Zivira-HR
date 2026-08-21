@@ -121,6 +121,9 @@ export type Holiday = {
 export type OnboardingDocument = {
   name: string;
   fileName?: string | null;
+  fileData?: string | null;
+  fileType?: string | null;
+  fileSize?: number | null;
   status: "PENDING" | "UPLOADED" | "VERIFIED" | "REJECTED";
   rejectReason?: string | null;
 };
@@ -276,6 +279,47 @@ export function setStoredUser(user: Record<string, unknown>) {
   window.localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
+// Saved credentials — item 12/11 of the client's requirement list: when HR
+// generates a new employee's login credentials, the display must not
+// auto-disappear. HR chooses "Save" (persisted here so it keeps showing up
+// under the Header notification bell until HR clears it) or "Dismiss"
+// (never stored). Mirrors the getToken/setToken localStorage pattern above.
+const CREDENTIALS_KEY = "zivira_saved_credentials";
+
+export type SavedCredential = {
+  id: string;
+  employeeCode: string;
+  employeeName: string;
+  username: string;
+  tempPassword: string;
+  savedAt: string;
+};
+
+export function getSavedCredentials(): SavedCredential[] {
+  if (typeof window === "undefined") return [];
+  const raw = window.localStorage.getItem(CREDENTIALS_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function addSavedCredential(cred: { employeeCode: string; employeeName: string; username: string; tempPassword: string }): SavedCredential {
+  const list = getSavedCredentials();
+  const id = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${cred.employeeCode}-${Date.now()}`;
+  const entry: SavedCredential = { ...cred, id, savedAt: new Date().toISOString() };
+  window.localStorage.setItem(CREDENTIALS_KEY, JSON.stringify([entry, ...list]));
+  return entry;
+}
+
+export function removeSavedCredential(id: string) {
+  const list = getSavedCredentials().filter((c) => c.id !== id);
+  window.localStorage.setItem(CREDENTIALS_KEY, JSON.stringify(list));
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<ApiEnvelope<T>> {
   const token = getToken();
   const res = await fetch(`${API_BASE_URL}${path}`, {
@@ -408,8 +452,11 @@ export const apiClient = {
   essOnboarding: () => request<Onboarding>("/ess/onboarding"),
   essSaveOnboarding: (input: Partial<Pick<Onboarding, "personal" | "address" | "education" | "experience" | "bank" | "statutory">>) =>
     request<Onboarding>("/ess/onboarding", { method: "PUT", body: JSON.stringify(input) }),
-  essUploadOnboardingDocument: (docName: string, fileName: string) =>
-    request<Onboarding>(`/ess/onboarding/documents/${encodeURIComponent(docName)}`, { method: "POST", body: JSON.stringify({ fileName }) }),
+  essUploadOnboardingDocument: (docName: string, fileName: string, fileData: string, fileType: string, fileSize: number) =>
+    request<Onboarding>(`/ess/onboarding/documents/${encodeURIComponent(docName)}`, {
+      method: "POST",
+      body: JSON.stringify({ fileName, fileData, fileType, fileSize })
+    }),
   essSubmitOnboarding: () => request<Onboarding>("/ess/onboarding/submit", { method: "POST" }),
   essAttendance: (month?: string) => request<Attendance[]>(`/ess/attendance${month ? `?month=${month}` : ""}`),
   essLeave: () => request<LeaveApplication[]>("/ess/leave"),

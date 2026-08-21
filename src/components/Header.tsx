@@ -2,7 +2,7 @@
 
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
-import { getStoredUser } from "@/lib/api-client";
+import { getStoredUser, getSavedCredentials, removeSavedCredential, type SavedCredential } from "@/lib/api-client";
 import { apiClient, type LeaveApplication } from "@/lib/api-client";
 
 export default function Header() {
@@ -11,6 +11,7 @@ export default function Header() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [displayName, setDisplayName] = useState("Admin");
   const [pendingLeave, setPendingLeave] = useState<LeaveApplication[]>([]);
+  const [savedCredentials, setSavedCredentials] = useState<SavedCredential[]>([]);
 
   useEffect(() => {
     setMounted(true);
@@ -20,7 +21,19 @@ export default function Header() {
       .leaveApplications("PENDING")
       .then((res) => setPendingLeave(res.data.slice(0, 5)))
       .catch(() => setPendingLeave([]));
+    setSavedCredentials(getSavedCredentials());
   }, []);
+
+  // Re-read whenever the dropdown is opened, so a credential just Saved
+  // from the employee profile page shows up without needing a full reload.
+  useEffect(() => {
+    if (isNotificationsOpen) setSavedCredentials(getSavedCredentials());
+  }, [isNotificationsOpen]);
+
+  const handleRemoveCredential = (id: string) => {
+    removeSavedCredential(id);
+    setSavedCredentials(getSavedCredentials());
+  };
 
   return (
     <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-6 sticky top-0 z-10 w-full transition-colors">
@@ -46,13 +59,33 @@ export default function Header() {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
-            {pendingLeave.length > 0 && <span className="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full"></span>}
+            {(pendingLeave.length > 0 || savedCredentials.length > 0) && <span className="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full"></span>}
           </button>
 
-          {/* Notifications Dropdown — real pending leave requests, the one
-              cross-portal signal every HR staffer needs to see at a glance. */}
+          {/* Notifications Dropdown — real pending leave requests, plus any
+              employee login credentials HR chose to Save (see the Save /
+              Disappear prompt on the employee profile page) rather than
+              share immediately and let vanish. */}
           {isNotificationsOpen && (
             <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-800 overflow-hidden z-50">
+              {savedCredentials.length > 0 && (
+                <>
+                  <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+                    <h3 className="font-bold text-gray-900 dark:text-gray-100">Saved Login Credentials</h3>
+                  </div>
+                  <div className="max-h-56 overflow-y-auto border-b border-gray-100 dark:border-gray-800">
+                    {savedCredentials.map((cred) => (
+                      <div key={cred.id} className="p-4 border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <div className="flex justify-between items-start mb-1">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{cred.employeeName}</p>
+                          <button onClick={() => handleRemoveCredential(cred.id)} className="text-xs text-gray-400 hover:text-red-500">Remove</button>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">ID: {cred.username} · Pass: {cred.tempPassword}</p>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
               <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
                 <h3 className="font-bold text-gray-900 dark:text-gray-100">Pending Leave Requests</h3>
               </div>

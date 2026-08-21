@@ -29,6 +29,11 @@ export default function HRDocumentVerificationPage({ params }: { params: Promise
   const [isLoading, setIsLoading] = useState(true);
   const [busyDoc, setBusyDoc] = useState<string | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
+  // Reject reason is collected in a centered in-app modal instead of the
+  // browser's native window.prompt(), which renders wherever the browser
+  // chooses (often pinned to a corner) rather than centered on the page.
+  const [rejectTarget, setRejectTarget] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   const load = () => {
     setIsLoading(true);
@@ -62,13 +67,19 @@ export default function HRDocumentVerificationPage({ params }: { params: Promise
     }
   };
 
-  const handleReject = async (docName: string) => {
-    const reason = window.prompt(`Reason for rejecting ${docName}?`);
-    if (!reason) return;
+  const openRejectModal = (docName: string) => {
+    setRejectReason("");
+    setRejectTarget(docName);
+  };
+
+  const confirmReject = async () => {
+    if (!rejectTarget || !rejectReason.trim()) return;
+    const docName = rejectTarget;
     setBusyDoc(docName);
     try {
-      await apiClient.rejectOnboardingDocument(employeeId, docName, reason);
+      await apiClient.rejectOnboardingDocument(employeeId, docName, rejectReason.trim());
       toast.error(`${docName} rejected.`);
+      setRejectTarget(null);
       load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to reject document");
@@ -136,10 +147,29 @@ export default function HRDocumentVerificationPage({ params }: { params: Promise
           {onboarding.documents.map((doc) => (
             <div key={doc.name} className="border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden flex flex-col md:flex-row">
               <div className="bg-gray-100 dark:bg-gray-800 p-6 md:w-1/3 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-800 flex flex-col justify-center items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{doc.fileName ?? "Not uploaded"}</p>
+                {doc.fileData ? (
+                  <a
+                    href={doc.fileData}
+                    target="_blank"
+                    rel="noreferrer"
+                    download={doc.fileName ?? undefined}
+                    title={`Open ${doc.fileName ?? doc.name}`}
+                    className="flex flex-col items-center group"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-orange-500 group-hover:text-orange-600 mb-2 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p className="text-sm font-medium text-orange-700 dark:text-orange-400 group-hover:underline text-center break-all">{doc.fileName ?? doc.name}</p>
+                    <span className="text-xs text-gray-400 mt-1">Click to open</span>
+                  </a>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{doc.fileName ?? "Not uploaded"}</p>
+                  </>
+                )}
               </div>
               <div className="p-6 md:w-2/3 flex flex-col justify-center">
                 <div className="flex justify-between items-start mb-4">
@@ -161,7 +191,7 @@ export default function HRDocumentVerificationPage({ params }: { params: Promise
                   </button>
                   <button
                     disabled={doc.status === "PENDING" || busyDoc === doc.name}
-                    onClick={() => handleReject(doc.name)}
+                    onClick={() => openRejectModal(doc.name)}
                     className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium py-2 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     ✕ Reject
@@ -185,6 +215,44 @@ export default function HRDocumentVerificationPage({ params }: { params: Promise
           </div>
         )}
       </div>
+
+      {rejectTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setRejectTarget(null); }}
+        >
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-800 w-full max-w-md p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">Reject {rejectTarget}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">The employee will be emailed this reason and asked to re-upload.</p>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Reason for rejecting</label>
+            <textarea
+              autoFocus
+              rows={3}
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="e.g. Image is blurry, please re-upload"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-white dark:bg-gray-950 dark:text-gray-100"
+            />
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setRejectTarget(null)}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmReject}
+                disabled={!rejectReason.trim() || busyDoc === rejectTarget}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {busyDoc === rejectTarget ? "Rejecting…" : "Reject Document"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

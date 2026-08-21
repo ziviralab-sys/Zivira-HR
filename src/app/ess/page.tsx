@@ -7,12 +7,97 @@ import { apiClient, getStoredUser, type Employee, type Attendance, type PayrollR
 // Zivira_HR_Client_Requirement_1A.docx §31 RBAC — Employee sees own
 // Profile/Attendance/Leave/Payslip/Tax/Loans/Documents only. Everything
 // below is scoped to the logged-in employee via /ess/* (requireEmployee).
+// Zivira_HR_Client_Requirement_1A.docx §30 "Employee Self-Service
+// Dashboard" tile set (Attendance/Leave/Payslip/Tax/Incentive/Loan),
+// extended per product decision with Documents, Onboarding, and Exit so
+// every tab from the HR-side Employee Profile view is also one click away
+// for the employee themselves.
+const TILES: { key: string; label: string; href: string; color: string; icon: JSX.Element }[] = [
+  {
+    key: "attendance", label: "Attendance", href: "/ess/attendance", color: "text-green-600 bg-green-100",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    )
+  },
+  {
+    key: "leave", label: "Leave", href: "/ess/leave", color: "text-yellow-600 bg-yellow-100",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
+      </svg>
+    )
+  },
+  {
+    key: "payslips", label: "Payslips", href: "/ess/payslips", color: "text-purple-600 bg-purple-100",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    )
+  },
+  {
+    key: "tax", label: "Tax", href: "/ess/tax", color: "text-blue-600 bg-blue-100",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3v-6m-3 6v-1m-2 6h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v13a2 2 0 002 2z" />
+      </svg>
+    )
+  },
+  {
+    key: "incentives", label: "Incentives", href: "/ess/incentives", color: "text-pink-600 bg-pink-100",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V6m0 10v2m9-8a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    )
+  },
+  {
+    key: "loans", label: "Loans", href: "/ess/loans", color: "text-orange-600 bg-orange-100",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a4 4 0 00-8 0v2M5 9h14l1 12H4L5 9z" />
+      </svg>
+    )
+  },
+  {
+    key: "documents", label: "Documents", href: "/ess/documents", color: "text-teal-600 bg-teal-100",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" />
+      </svg>
+    )
+  },
+  {
+    key: "onboarding", label: "Onboarding", href: "/onboarding/me/form", color: "text-indigo-600 bg-indigo-100",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    )
+  },
+  {
+    key: "exit", label: "Exit", href: "/ess/exit", color: "text-red-600 bg-red-100",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+      </svg>
+    )
+  }
+];
+
 export default function EmployeeDashboardPage() {
   const [profile, setProfile] = useState<(Employee & { onboardingStatus: string }) | null>(null);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [payslips, setPayslips] = useState<PayrollRun[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
+
+  useEffect(() => {
+    setMustChangePassword(Boolean(getStoredUser()?.mustChangePassword));
+  }, []);
 
   useEffect(() => {
     const month = new Date().toISOString().slice(0, 7);
@@ -56,6 +141,42 @@ export default function EmployeeDashboardPage() {
               Continue Onboarding
             </Link>
           )}
+        </div>
+
+        {/* Set-password prompt — the temp-password gate now unlocks straight
+            into onboarding + this dashboard; the account isn't fully secured
+            until a real password is set, so this stays visible (not a
+            blocking modal) until that's done. */}
+        {mustChangePassword && (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-800 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+              <h3 className="font-bold text-yellow-900 dark:text-yellow-200">Set Your Password</h3>
+              <p className="text-sm text-yellow-800 dark:text-yellow-300">You're still signed in with your temporary password. Set a permanent one to secure your account.</p>
+            </div>
+            <Link href="/onboarding/me" className="bg-yellow-600 hover:bg-yellow-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-sm transition-colors whitespace-nowrap">
+              Create Password
+            </Link>
+          </div>
+        )}
+
+        {/* Quick Actions — every tab available on the HR-side Employee
+            Profile, one click away for the employee themselves. */}
+        <div>
+          <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">Quick Actions</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            {TILES.map((tile) => (
+              <Link
+                key={tile.key}
+                href={tile.href}
+                className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5 flex flex-col items-center gap-3 text-center hover:shadow-md hover:-translate-y-0.5 transition-all"
+              >
+                <div className={`w-11 h-11 rounded-full flex items-center justify-center ${tile.color}`}>
+                  {tile.icon}
+                </div>
+                <span className="font-semibold text-gray-800 dark:text-gray-200 text-sm">{tile.label}</span>
+              </Link>
+            ))}
+          </div>
         </div>
 
         {/* Quick Stats Grid */}

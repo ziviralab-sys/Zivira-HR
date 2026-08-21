@@ -27,10 +27,14 @@ export default function LoginPage() {
       toast.success("Welcome back!");
 
       if (portal === "EMPLOYEE") {
-        // Doc's flow: temp-password login forces "CREATE PASSWORD" before
-        // anything else unlocks.
+        // A new employee logging in with their temp password fills their
+        // Personal Info (and the rest of the onboarding form) first, then
+        // lands on their Employee Dashboard once details are in — password
+        // creation is prompted from there, not forced before they can see
+        // anything. See /onboarding/me/form and the dashboard's "Set Your
+        // Password" banner.
         if (res.data.user.mustChangePassword) {
-          router.push("/onboarding/me");
+          router.push("/onboarding/me/form");
         } else {
           router.push("/ess");
         }

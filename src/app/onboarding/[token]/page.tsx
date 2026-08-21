@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { apiClient } from "@/lib/api-client";
 
-// Zivira_HR_Client_Requirement_1B.docx "CREATE PASSWORD" — the forced
-// first step after an Employee's temp-password login. Reached at
-// /onboarding/me (params.token is unused; the logged-in employee's own
-// JWT already identifies who this is — see POST /auth/change-password).
+// Zivira_HR_Client_Requirement_1B.docx "CREATE PASSWORD" — reached from
+// the Employee Dashboard's "Set Your Password" prompt, after the employee
+// has already filled in their onboarding details (Personal Info through
+// Documents & Review) and can see their profile on the dashboard.
+// params.token is unused; the logged-in employee's own JWT already
+// identifies who this is — see POST /auth/change-password.
 export default function CreatePasswordPage({ params }: { params: { token: string } }) {
   const router = useRouter();
   const [newPassword, setNewPassword] = useState("");
@@ -29,8 +31,8 @@ export default function CreatePasswordPage({ params }: { params: { token: string
     setIsSaving(true);
     try {
       await apiClient.changePassword(currentPassword, newPassword);
-      toast.success("Password set. Let's start your onboarding.");
-      router.push("/onboarding/me/form");
+      toast.success("Password set. Welcome to your dashboard!");
+      router.push("/ess");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to set password");
     } finally {
@@ -45,7 +47,7 @@ export default function CreatePasswordPage({ params }: { params: { token: string
           Create Your Password
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-          Welcome to Zivira HR! Please set up a secure password to begin your onboarding process.
+          Welcome to Zivira HR! Please set up a secure password to finish securing your account.
         </p>
       </div>
 

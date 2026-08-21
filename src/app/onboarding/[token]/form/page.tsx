@@ -7,10 +7,10 @@ import toast from "react-hot-toast";
 import { apiClient, type Onboarding } from "@/lib/api-client";
 
 // Zivira_HR_Client_Requirement_1B.docx "FILL ONBOARDING" — Personal Info,
-// Address, Education, Previous Employment, Bank Details, PF/UAN. The
+// Address, Education, Previous Company, Bank Details, PF/UAN. The
 // remaining two steps (Documents, Review) live on the next page
 // (/onboarding/me/documents), which also does the final SUBMIT.
-const steps = ["Personal Info", "Address", "Education", "Previous Employment", "Bank Details", "PF / UAN"];
+const steps = ["Personal Info", "Address", "Education", "Previous Company", "Bank Details", "PF / UAN"];
 
 type FormState = {
   personal: Record<string, string>;
@@ -23,12 +23,34 @@ type FormState = {
 
 const emptyForm: FormState = {
   personal: { firstName: "", lastName: "", dob: "", gender: "", personalEmail: "", mobile: "" },
-  address: { line1: "", city: "", state: "", pincode: "" },
+  address: { address: "", city: "", state: "", pincode: "" },
   education: { qualification: "", institution: "", yearOfPassing: "" },
-  experience: { previousEmployer: "", designation: "", fromDate: "", toDate: "" },
+  experience: { previousCompany: "", designation: "", fromDate: "", toDate: "" },
   bank: { accountHolderName: "", accountNumber: "", ifsc: "", bankName: "" },
   statutory: { pfUan: "", esiNumber: "" }
 };
+
+// Per-field validation — every field not listed here is accepted as-is
+// (free text). Applied on every keystroke so a wrong value is flagged
+// immediately with a red border + message instead of only failing later
+// at submit or, worse, silently saving bad data (wrong phone numbers,
+// malformed bank details, etc).
+const FIELD_VALIDATORS: Record<string, { test: (v: string) => boolean; message: string }> = {
+  mobile: { test: (v) => /^\d{10}$/.test(v), message: "Enter a valid 10-digit mobile number." },
+  personalEmail: { test: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), message: "Enter a valid email address." },
+  pincode: { test: (v) => /^\d{6}$/.test(v), message: "Enter a valid 6-digit pincode." },
+  accountNumber: { test: (v) => /^\d{9,18}$/.test(v), message: "Enter a valid bank account number (9-18 digits)." },
+  ifsc: { test: (v) => /^[A-Z]{4}0[A-Z0-9]{6}$/.test(v.toUpperCase()), message: "Enter a valid 11-character IFSC code (e.g. HDFC0001234)." },
+  pfUan: { test: (v) => /^\d{12}$/.test(v), message: "UAN must be exactly 12 digits." },
+  esiNumber: { test: (v) => /^\d{10,17}$/.test(v), message: "Enter a valid ESI number." }
+};
+
+function fieldError(field: string, value: string): string | null {
+  if (!value.trim()) return null; // required-ness is checked separately; this only flags a WRONG value
+  const validator = FIELD_VALIDATORS[field];
+  if (!validator) return null;
+  return validator.test(value.trim()) ? null : validator.message;
+}
 
 const FIELD_KEYS: (keyof FormState)[] = ["personal", "address", "education", "experience", "bank", "statutory"];
 
@@ -84,7 +106,18 @@ export default function OnboardingFormPage() {
     }
   };
 
+  const currentStepErrors = Object.keys(form[stepKey]).reduce<Record<string, string>>((acc, field) => {
+    const err = fieldError(field, form[stepKey][field] ?? "");
+    if (err) acc[field] = err;
+    return acc;
+  }, {});
+  const hasErrors = Object.keys(currentStepErrors).length > 0;
+
   const handleNext = async () => {
+    if (hasErrors) {
+      toast.error("Please fix the highlighted fields before continuing.");
+      return;
+    }
     setIsSaving(true);
     try {
       await persistCurrentStep();
@@ -158,17 +191,24 @@ export default function OnboardingFormPage() {
           <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-8">
             <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
               <div className="grid grid-cols-2 gap-6">
-                {fieldsFor(stepKey).map((field) => (
-                  <div key={field}>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{labelize(field)}</label>
-                    <input
-                      type={field.toLowerCase().includes("date") || field === "dob" ? "date" : "text"}
-                      value={form[stepKey][field]}
-                      onChange={(e) => updateField(field, e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-white dark:bg-gray-950 dark:text-gray-100"
-                    />
-                  </div>
-                ))}
+                {fieldsFor(stepKey).map((field) => {
+                  const err = currentStepErrors[field];
+                  return (
+                    <div key={field}>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{labelize(field)}</label>
+                      <input
+                        type={field.toLowerCase().includes("date") || field === "dob" ? "date" : "text"}
+                        value={form[stepKey][field]}
+                        onChange={(e) => updateField(field, e.target.value)}
+                        aria-invalid={!!err}
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none bg-white dark:bg-gray-950 dark:text-gray-100 transition-colors ${
+                          err ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-orange-500"
+                        }`}
+                      />
+                      {err && <p className="mt-1 text-xs text-red-600">{err}</p>}
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="pt-6 mt-6 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-4">
@@ -184,8 +224,9 @@ export default function OnboardingFormPage() {
                 <button
                   type="button"
                   onClick={handleNext}
-                  disabled={isSaving}
-                  className="px-6 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 disabled:opacity-50"
+                  disabled={isSaving || hasErrors}
+                  title={hasErrors ? "Fix the highlighted fields to continue" : undefined}
+                  className="px-6 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSaving ? "Saving..." : currentStep < steps.length - 1 ? "Save & Next" : "Continue to Documents"}
                 </button>
