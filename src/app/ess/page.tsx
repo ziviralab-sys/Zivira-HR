@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type JSX } from "react";
 import { apiClient, getStoredUser, type Employee, type Attendance, type PayrollRun, type Holiday } from "@/lib/api-client";
 
 // Zivira_HR_Client_Requirement_1A.docx §31 RBAC — Employee sees own
