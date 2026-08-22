@@ -128,21 +128,42 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Headcount Donut Chart */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-6 flex flex-col">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-6 flex flex-col overflow-hidden">
           <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">Headcount by Division</h3>
-          <div className="flex-1 min-h-[250px]">
+          <div className="flex-1 min-h-[250px] min-w-0 overflow-hidden">
             {deptData.length === 0 ? (
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-8 text-center">No employees yet.</p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={deptData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                <PieChart margin={{ top: 0, right: 8, bottom: 0, left: 8 }}>
+                  <Pie data={deptData} cx="50%" cy="50%" innerRadius={55} outerRadius={75} paddingAngle={5} dataKey="value">
                     {deptData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                  <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                  <Legend
+                    verticalAlign="bottom"
+                    height={48}
+                    iconType="circle"
+                    iconSize={8}
+                    wrapperStyle={{
+                      fontSize: 11,
+                      lineHeight: '16px',
+                      width: '100%',
+                      maxWidth: '100%',
+                      overflow: 'hidden',
+                      whiteSpace: 'normal',
+                      wordBreak: 'break-word',
+                      textAlign: 'center',
+                      paddingTop: 4
+                    }}
+                    formatter={(value: string) => (
+                      <span style={{ color: 'inherit' }} title={value}>
+                        {value.length > 14 ? `${value.slice(0, 13)}…` : value}
+                      </span>
+                    )}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             )}

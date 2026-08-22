@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { apiClient, type Onboarding } from "@/lib/api-client";
+import { CustomDatePicker } from "@/components/CustomDatePicker";
 
 // Zivira_HR_Client_Requirement_1B.docx "FILL ONBOARDING" — Personal Info,
 // Address, Education, Previous Company, Bank Details, PF/UAN. The
@@ -140,7 +141,27 @@ export default function OnboardingFormPage() {
   if (isLoading) return <div className="min-h-screen flex items-center justify-center text-gray-400">Loading…</div>;
 
   const fieldsFor = (key: keyof FormState) => Object.keys(form[key]);
-  const labelize = (key: string) => key.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
+
+  // Explicit overrides for fields whose plain-English label isn't just
+  // "split on capital letters, capitalize every word" — acronyms
+  // (IFSC, PF/UAN, ESI) must stay upper-case, and connector words like
+  // "of" must stay lower-case ("Year of Passing", not "Year Of Passing").
+  const LABEL_OVERRIDES: Record<string, string> = {
+    ifsc: "IFSC",
+    pfUan: "PF/UAN",
+    esiNumber: "ESI Number",
+    yearOfPassing: "Year of Passing"
+  };
+  const LOWERCASE_WORDS = new Set(["of", "and", "the", "in", "on", "for", "to"]);
+  const labelize = (key: string) => {
+    if (LABEL_OVERRIDES[key]) return LABEL_OVERRIDES[key];
+    return key
+      .replace(/([A-Z])/g, " $1")
+      .trim()
+      .split(" ")
+      .map((word, i) => (i > 0 && LOWERCASE_WORDS.has(word.toLowerCase()) ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1)))
+      .join(" ");
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex">
@@ -178,13 +199,25 @@ export default function OnboardingFormPage() {
       <div className="ml-64 flex-1 p-10">
         <div className="max-w-3xl mx-auto">
           <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{steps[currentStep]}</h1>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/ess"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                title="Back to Dashboard"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+              </Link>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{steps[currentStep]}</h1>
+            </div>
             <button
+              type="button"
               onClick={handleSaveExit}
               disabled={isSaving}
               className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 font-medium disabled:opacity-50"
             >
-              Save &amp; Exit
+              {isSaving ? "Saving…" : "Save & Exit"}
             </button>
           </div>
 
@@ -193,18 +226,27 @@ export default function OnboardingFormPage() {
               <div className="grid grid-cols-2 gap-6">
                 {fieldsFor(stepKey).map((field) => {
                   const err = currentStepErrors[field];
+                  const isDateField = field.toLowerCase().includes("date") || field === "dob";
                   return (
                     <div key={field}>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{labelize(field)}</label>
-                      <input
-                        type={field.toLowerCase().includes("date") || field === "dob" ? "date" : "text"}
-                        value={form[stepKey][field]}
-                        onChange={(e) => updateField(field, e.target.value)}
-                        aria-invalid={!!err}
-                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none bg-white dark:bg-gray-950 dark:text-gray-100 transition-colors ${
-                          err ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-orange-500"
-                        }`}
-                      />
+                      {isDateField ? (
+                        <CustomDatePicker
+                          value={form[stepKey][field]}
+                          onChange={(v) => updateField(field, v)}
+                          className={err ? "[&>button]:border-red-500" : ""}
+                        />
+                      ) : (
+                        <input
+                          type="text"
+                          value={form[stepKey][field]}
+                          onChange={(e) => updateField(field, e.target.value)}
+                          aria-invalid={!!err}
+                          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none bg-white dark:bg-gray-950 dark:text-gray-100 transition-colors ${
+                            err ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-orange-500"
+                          }`}
+                        />
+                      )}
                       {err && <p className="mt-1 text-xs text-red-600">{err}</p>}
                     </div>
                   );

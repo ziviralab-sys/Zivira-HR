@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { apiClient, type Onboarding } from "@/lib/api-client";
+import { apiClient, openDataUrlInNewTab, type Onboarding } from "@/lib/api-client";
 
 // Zivira_HR_Client_Requirement_1B.docx "FILL ONBOARDING" step 7/8
 // (Documents) + step 8 (Review/SUBMIT). The file's actual bytes are read
@@ -77,7 +77,11 @@ export default function EmployeeDocumentUploadPage() {
   if (isLoading) return <div className="min-h-screen flex items-center justify-center text-gray-400">Loading…</div>;
 
   const documents = onboarding?.documents ?? [];
-  const allUploaded = documents.length > 0 && documents.every((d) => d.status !== "PENDING");
+  // A REJECTED document must be re-uploaded before submission is allowed —
+  // it isn't "PENDING" any more, but it also isn't accepted, so treating
+  // "not PENDING" as "ready" let a rejected file silently pass through
+  // and left the Submit button clickable when it shouldn't have been.
+  const allUploaded = documents.length > 0 && documents.every((d) => d.status === "UPLOADED" || d.status === "VERIFIED");
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex">
@@ -124,15 +128,14 @@ export default function EmployeeDocumentUploadPage() {
                   <div className="flex items-center gap-4">
                     {doc.status !== "PENDING" && doc.status !== "REJECTED" && (
                       doc.fileData ? (
-                        <a
-                          href={doc.fileData}
-                          target="_blank"
-                          rel="noreferrer"
+                        <button
+                          type="button"
+                          onClick={() => openDataUrlInNewTab(doc.fileData!)}
                           className="text-sm font-medium text-green-600 hover:underline"
                           title="Review the file you uploaded"
                         >
                           {doc.fileName} ✓ (Preview)
-                        </a>
+                        </button>
                       ) : (
                         <span className="text-sm font-medium text-green-600">{doc.fileName} ✓</span>
                       )

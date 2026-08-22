@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { apiClient, type Attendance } from "@/lib/api-client";
+import { CustomDatePicker } from "@/components/CustomDatePicker";
 
 const STATUS_COLOR: Record<string, string> = {
   PRESENT: "bg-green-100 text-green-700",
@@ -29,23 +31,52 @@ function workingHours(inAt?: string | null, outAt?: string | null) {
 // Zivira_HR_Client_Requirement_1A.docx §9 Attendance Module, read-only
 // employee view of GET /ess/attendance — the exact same AttendanceModel
 // rows HR sees in the Attendance Register, scoped to this employee only.
+const todayIso = () => new Date().toISOString().slice(0, 10);
+
 export default function EssAttendancePage() {
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
   const [rows, setRows] = useState<Attendance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPunching, setIsPunching] = useState(false);
 
-  useEffect(() => {
+  const load = (m: string) => {
     setIsLoading(true);
     apiClient
-      .essAttendance(month)
+      .essAttendance(m)
       .then((res) => setRows(res.data))
       .catch(() => setRows([]))
       .finally(() => setIsLoading(false));
+  };
+
+  useEffect(() => {
+    load(month);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [month]);
 
   const presentDays = rows.filter((r) => r.status === "PRESENT").length;
   const absentDays = rows.filter((r) => r.status === "ABSENT").length;
   const leaveDays = rows.filter((r) => r.status === "LEAVE").length;
+
+  // Today's row (if the current month is the one being viewed) drives
+  // whether Punch In / Punch Out is available — matches the 1A doc's
+  // Attendance Module requirement that the employee can mark their own
+  // attendance, which then flows straight into the same records HR sees.
+  const todayRow = month === new Date().toISOString().slice(0, 7) ? rows.find((r) => r.attendanceDate.slice(0, 10) === todayIso()) : undefined;
+  const canPunchIn = !todayRow?.checkInAt;
+  const canPunchOut = Boolean(todayRow?.checkInAt) && !todayRow?.checkOutAt;
+
+  const handlePunch = async (action: "IN" | "OUT") => {
+    setIsPunching(true);
+    try {
+      await apiClient.essPunchAttendance(action);
+      toast.success(action === "IN" ? "Punched in!" : "Punched out!");
+      load(month);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to record attendance");
+    } finally {
+      setIsPunching(false);
+    }
+  };
 
   return (
     <main className="max-w-5xl mx-auto px-6 pt-24 pb-12 space-y-6">
@@ -58,12 +89,35 @@ export default function EssAttendancePage() {
           </Link>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wide">Attendance</h1>
         </div>
-        <input
-          type="month"
-          value={month}
-          onChange={(e) => setMonth(e.target.value)}
-          className="border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-950"
-        />
+        <CustomDatePicker mode="month" value={month} onChange={setMonth} className="w-40" />
+      </div>
+
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="font-semibold text-gray-800 dark:text-gray-200">Today — {todayIso()}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {todayRow?.checkInAt ? `Punched in at ${formatTime(todayRow.checkInAt)}` : "Not punched in yet"}
+            {todayRow?.checkOutAt ? ` · Punched out at ${formatTime(todayRow.checkOutAt)}` : ""}
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => handlePunch("IN")}
+            disabled={!canPunchIn || isPunching}
+            className="px-5 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Punch In
+          </button>
+          <button
+            type="button"
+            onClick={() => handlePunch("OUT")}
+            disabled={!canPunchOut || isPunching}
+            className="px-5 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Punch Out
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
@@ -86,10 +140,10 @@ export default function EssAttendancePage() {
           <thead className="bg-gray-50 dark:bg-gray-950 text-left text-gray-500 dark:text-gray-400">
             <tr>
               <th className="px-4 py-3">Date</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">In</th>
-              <th className="px-4 py-3">Out</th>
+              <th className="px-4 py-3">Punch In</th>
+              <th className="px-4 py-3">Punch Out</th>
               <th className="px-4 py-3">Working Hours</th>
+              <th className="px-4 py-3">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -101,12 +155,12 @@ export default function EssAttendancePage() {
               rows.map((r) => (
                 <tr key={r.id}>
                   <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200">{r.attendanceDate.slice(0, 10)}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_COLOR[r.status] ?? "bg-gray-100 text-gray-600"}`}>{r.status}</span>
-                  </td>
                   <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatTime(r.checkInAt)}</td>
                   <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatTime(r.checkOutAt)}</td>
                   <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{workingHours(r.checkInAt, r.checkOutAt)}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_COLOR[r.status] ?? "bg-gray-100 text-gray-600"}`}>{r.status}</span>
+                  </td>
                 </tr>
               ))
             )}

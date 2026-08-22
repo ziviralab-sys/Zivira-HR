@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { apiClient, type Employee } from "@/lib/api-client";
+import { CustomDatePicker } from "@/components/CustomDatePicker";
 
 const ROLES = ["NBH", "BH", "RBM", "ZBM", "ABM", "SR_MR", "MR", "OTHER"] as const;
 
@@ -160,7 +161,7 @@ export default function AddEmployeePage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Joining Date</label>
-              <input type="date" value={form.joinDate} onChange={(e) => update("joinDate", e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors" />
+              <CustomDatePicker value={form.joinDate} onChange={(v) => update("joinDate", v)} />
             </div>
 
             <div>

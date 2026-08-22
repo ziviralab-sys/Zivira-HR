@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { apiClient, type Onboarding } from "@/lib/api-client";
+import { apiClient, openDataUrlInNewTab, type Onboarding } from "@/lib/api-client";
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING: "Not Uploaded",
@@ -67,9 +67,13 @@ export default function EssDocumentsPage() {
                 <div className="flex items-center gap-3">
                   <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_COLOR[doc.status]}`}>{STATUS_LABEL[doc.status]}</span>
                   {doc.fileData && (
-                    <a href={doc.fileData} target="_blank" rel="noreferrer" className="text-sm font-medium text-orange-600 hover:underline">
+                    <button
+                      type="button"
+                      onClick={() => openDataUrlInNewTab(doc.fileData!)}
+                      className="text-sm font-medium text-orange-600 hover:underline"
+                    >
                       View
-                    </a>
+                    </button>
                   )}
                 </div>
               </div>

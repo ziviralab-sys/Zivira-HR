@@ -93,12 +93,9 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {portal === "EMPLOYEE" ? "Temporary Password" : "Password"}
-              </label>
-              <a href="#" className="text-sm font-medium text-orange-600 hover:text-orange-500 dark:text-orange-400 dark:hover:text-orange-300">Forgot password?</a>
-            </div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {portal === "EMPLOYEE" ? "Temporary Password" : "Password"}
+            </label>
             <input
               type="password"
               required
@@ -125,10 +122,6 @@ export default function LoginPage() {
             ) : "Sign in"}
           </button>
         </form>
-
-        <p className="mt-8 text-center text-sm text-gray-600 dark:text-gray-400">
-          Don't have an account? <a href="#" className="font-medium text-orange-600 hover:text-orange-500 dark:text-orange-400 dark:hover:text-orange-300">Request access</a>
-        </p>
       </div>
 
     </div>

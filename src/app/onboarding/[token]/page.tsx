@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { apiClient } from "@/lib/api-client";
+import { apiClient, getStoredUser, setStoredUser } from "@/lib/api-client";
 
 // Zivira_HR_Client_Requirement_1B.docx "CREATE PASSWORD" — reached from
 // the Employee Dashboard's "Set Your Password" prompt, after the employee
@@ -31,6 +31,12 @@ export default function CreatePasswordPage({ params }: { params: { token: string
     setIsSaving(true);
     try {
       await apiClient.changePassword(currentPassword, newPassword);
+      // The dashboard's "Set Your Password" banner reads this flag straight
+      // out of localStorage — without updating it here it stays stale
+      // forever (until the next full re-login), so the banner would keep
+      // nagging an employee who already changed their password.
+      const user = getStoredUser();
+      if (user) setStoredUser({ ...user, mustChangePassword: false });
       toast.success("Password set. Welcome to your dashboard!");
       router.push("/ess");
     } catch (err) {

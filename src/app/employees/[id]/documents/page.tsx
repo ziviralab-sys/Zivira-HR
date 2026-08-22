@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, use } from "react";
 import toast from "react-hot-toast";
-import { apiClient, type Onboarding, type Employee } from "@/lib/api-client";
+import { apiClient, openDataUrlInNewTab, type Onboarding, type Employee } from "@/lib/api-client";
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING: "Not Uploaded",
@@ -148,11 +148,9 @@ export default function HRDocumentVerificationPage({ params }: { params: Promise
             <div key={doc.name} className="border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden flex flex-col md:flex-row">
               <div className="bg-gray-100 dark:bg-gray-800 p-6 md:w-1/3 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-800 flex flex-col justify-center items-center">
                 {doc.fileData ? (
-                  <a
-                    href={doc.fileData}
-                    target="_blank"
-                    rel="noreferrer"
-                    download={doc.fileName ?? undefined}
+                  <button
+                    type="button"
+                    onClick={() => openDataUrlInNewTab(doc.fileData!)}
                     title={`Open ${doc.fileName ?? doc.name}`}
                     className="flex flex-col items-center group"
                   >
@@ -161,7 +159,7 @@ export default function HRDocumentVerificationPage({ params }: { params: Promise
                     </svg>
                     <p className="text-sm font-medium text-orange-700 dark:text-orange-400 group-hover:underline text-center break-all">{doc.fileName ?? doc.name}</p>
                     <span className="text-xs text-gray-400 mt-1">Click to open</span>
-                  </a>
+                  </button>
                 ) : (
                   <>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { apiClient, type Attendance, type Employee } from "@/lib/api-client";
+import { CustomDatePicker } from "@/components/CustomDatePicker";
 
 const STATUS_STYLES: Record<Attendance["status"], string> = {
   PRESENT: "bg-green-100 text-green-700",
@@ -168,13 +169,8 @@ export default function AttendanceRegisterPage() {
 
       {/* Date Filter & Stats */}
       <div className="flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
-        <div className="flex items-center gap-4 bg-white dark:bg-gray-900 p-2 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm">
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="font-bold text-gray-800 dark:text-gray-200 bg-transparent outline-none px-2"
-          />
+        <div className="bg-white dark:bg-gray-900 p-2 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm">
+          <CustomDatePicker value={selectedDate} onChange={setSelectedDate} className="w-44" />
         </div>
 
         <div className="flex gap-4">

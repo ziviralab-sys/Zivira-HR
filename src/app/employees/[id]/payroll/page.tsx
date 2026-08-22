@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, use } from "react";
 import toast from "react-hot-toast";
 import { apiClient, type SalaryStructure, type Loan, type Arrear } from "@/lib/api-client";
+import { CustomDatePicker } from "@/components/CustomDatePicker";
 
 export default function EmployeePayrollPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -153,7 +154,7 @@ export default function EmployeePayrollPage({ params }: { params: Promise<{ id: 
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Effective From</label>
-                <input type="date" required value={form.effectiveFrom} onChange={(e) => setForm((p) => ({ ...p, effectiveFrom: e.target.value }))} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" />
+                <CustomDatePicker required value={form.effectiveFrom} onChange={(v) => setForm((p) => ({ ...p, effectiveFrom: v }))} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Basic % of CTC</label>
@@ -246,7 +247,7 @@ export default function EmployeePayrollPage({ params }: { params: Promise<{ id: 
             <form onSubmit={handleCreateLoan} className="space-y-3 mb-4 border-b border-gray-100 dark:border-gray-800 pb-4">
               <input type="number" placeholder="Principal (₹)" required value={loanForm.principal} onChange={(e) => setLoanForm((p) => ({ ...p, principal: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
               <input type="number" placeholder="Monthly EMI (₹)" required value={loanForm.emiAmount} onChange={(e) => setLoanForm((p) => ({ ...p, emiAmount: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-              <input type="month" required value={loanForm.startMonth} onChange={(e) => setLoanForm((p) => ({ ...p, startMonth: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+              <CustomDatePicker mode="month" required value={loanForm.startMonth} onChange={(v) => setLoanForm((p) => ({ ...p, startMonth: v }))} />
               <input type="text" placeholder="Reason (optional)" value={loanForm.reason} onChange={(e) => setLoanForm((p) => ({ ...p, reason: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
               <button type="submit" className="w-full bg-orange-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-orange-700">Create Loan</button>
             </form>
@@ -281,7 +282,7 @@ export default function EmployeePayrollPage({ params }: { params: Promise<{ id: 
           {showArrearForm && (
             <form onSubmit={handleCreateArrear} className="space-y-3 mb-4 border-b border-gray-100 dark:border-gray-800 pb-4">
               <input type="number" placeholder="Amount (₹, can be negative)" required value={arrearForm.amount} onChange={(e) => setArrearForm((p) => ({ ...p, amount: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-              <input type="month" required value={arrearForm.month} onChange={(e) => setArrearForm((p) => ({ ...p, month: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+              <CustomDatePicker mode="month" required value={arrearForm.month} onChange={(v) => setArrearForm((p) => ({ ...p, month: v }))} />
               <input type="text" placeholder="Reason (optional)" value={arrearForm.reason} onChange={(e) => setArrearForm((p) => ({ ...p, reason: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
               <button type="submit" className="w-full bg-orange-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-orange-700">Create Arrear</button>
             </form>

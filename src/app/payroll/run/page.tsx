@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { apiClient, type PayrollRun } from "@/lib/api-client";
+import { CustomDatePicker } from "@/components/CustomDatePicker";
 
 function currentMonth() {
   const now = new Date();
@@ -110,12 +111,7 @@ export default function RunPayrollPage() {
           <p className="text-gray-500 dark:text-gray-400 mt-2">Process salary calculations for the selected month.</p>
         </div>
         <div className="flex gap-3 items-center">
-          <input
-            type="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-          />
+          <CustomDatePicker mode="month" value={month} onChange={setMonth} className="w-40" />
           <button
             onClick={handleGenerate}
             disabled={isGenerating}

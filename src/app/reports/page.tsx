@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiClient, type PayrollSummary, type CompOffSummary } from "@/lib/api-client";
+import { CustomDatePicker } from "@/components/CustomDatePicker";
 
 // Zivira_HR_Client_Requirement_1A.docx Phase 1 MVP "Reports" — a payroll
 // summary for a chosen month plus a CSV export "in the exact format
@@ -34,12 +35,7 @@ export default function ReportsPage() {
           <p className="text-gray-500 dark:text-gray-400 mt-2">Payroll summary and exports for Accounts.</p>
         </div>
         <div className="flex gap-3 items-center">
-          <input
-            type="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            className="border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-950"
-          />
+          <CustomDatePicker mode="month" value={month} onChange={setMonth} className="w-40" />
           <a
             href={apiClient.payrollExportUrl(month)}
             target="_blank"

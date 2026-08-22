@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiClient, type CompOff, type Employee } from "@/lib/api-client";
+import { CustomDatePicker } from "@/components/CustomDatePicker";
 
 // Phase 2 MVP item "Comp-Off" (Zivira_HR_Client_Requirement_1A.docx §32).
 // HR grants a compensatory-off credit here; the employee later spends it
@@ -88,8 +89,7 @@ export default function CompOffsPage() {
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1">Earned Date (worked holiday/weekend)</label>
-              <input type="date" value={form.earnedDate} onChange={(e) => setForm({ ...form, earnedDate: e.target.value })}
-                className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-950" />
+              <CustomDatePicker value={form.earnedDate} onChange={(v) => setForm({ ...form, earnedDate: v })} />
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1">Reason</label>
@@ -98,8 +98,7 @@ export default function CompOffsPage() {
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1">Expires On (optional)</label>
-              <input type="date" value={form.expiresOn} onChange={(e) => setForm({ ...form, expiresOn: e.target.value })}
-                className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-950" />
+              <CustomDatePicker value={form.expiresOn} onChange={(v) => setForm({ ...form, expiresOn: v })} />
             </div>
           </div>
           <div className="flex justify-end">

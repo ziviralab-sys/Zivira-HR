@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { apiClient, type LeaveApplication, type CompOff } from "@/lib/api-client";
+import { CustomDatePicker } from "@/components/CustomDatePicker";
 
 // Zivira_HR_Client_Requirement_1A.docx §25 Leave Management (employee
 // side): Leave Type -> Leave Request. Backed by GET/POST /ess/leave and
@@ -121,11 +122,11 @@ export default function ESSLeaveApplyPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Start Date <span className="text-red-500">*</span></label>
-                <input type="date" required value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-600 focus:border-transparent outline-none transition-shadow text-gray-700 dark:text-gray-300" />
+                <CustomDatePicker required value={fromDate} onChange={setFromDate} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">End Date <span className="text-red-500">*</span></label>
-                <input type="date" required value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-600 focus:border-transparent outline-none transition-shadow text-gray-700 dark:text-gray-300" />
+                <CustomDatePicker required value={toDate} onChange={setToDate} />
               </div>
             </div>
 

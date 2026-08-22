@@ -320,6 +320,35 @@ export function removeSavedCredential(id: string) {
   window.localStorage.setItem(CREDENTIALS_KEY, JSON.stringify(list));
 }
 
+// Opening a base64 "data:" URL directly via <a href target="_blank"> is
+// unreliable in Chrome — a top-level navigation to a data: URL is
+// sometimes silently blocked, landing on a blank tab instead of showing
+// the file (the exact "Preview goes to an empty page" bug reported
+// against the document-review screens). Converting to a real Blob and
+// opening THAT as an object URL avoids the restriction and works for
+// both images and PDFs.
+export function openDataUrlInNewTab(dataUrl: string) {
+  try {
+    const commaIndex = dataUrl.indexOf(",");
+    const meta = dataUrl.slice(5, commaIndex); // strip "data:"
+    const base64 = dataUrl.slice(commaIndex + 1);
+    const mime = meta.split(";")[0] || "application/octet-stream";
+    const byteString = window.atob(base64);
+    const bytes = new Uint8Array(byteString.length);
+    for (let i = 0; i < byteString.length; i++) bytes[i] = byteString.charCodeAt(i);
+    const blob = new Blob([bytes], { type: mime });
+    const blobUrl = URL.createObjectURL(blob);
+    const opened = window.open(blobUrl, "_blank", "noopener,noreferrer");
+    if (!opened) throw new Error("Popup blocked");
+    // Give the new tab time to actually load the blob before releasing it.
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+  } catch {
+    // Last-resort fallback — still better than nothing if the browser
+    // blocks the Blob approach for some reason.
+    window.open(dataUrl, "_blank", "noopener,noreferrer");
+  }
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<ApiEnvelope<T>> {
   const token = getToken();
   const res = await fetch(`${API_BASE_URL}${path}`, {
@@ -459,6 +488,8 @@ export const apiClient = {
     }),
   essSubmitOnboarding: () => request<Onboarding>("/ess/onboarding/submit", { method: "POST" }),
   essAttendance: (month?: string) => request<Attendance[]>(`/ess/attendance${month ? `?month=${month}` : ""}`),
+  essPunchAttendance: (action: "IN" | "OUT") =>
+    request<Attendance>("/ess/attendance/punch", { method: "POST", body: JSON.stringify({ action }) }),
   essLeave: () => request<LeaveApplication[]>("/ess/leave"),
   essLeaveTypes: () => request<{ id: string; leaveTypeDesc: string }[]>("/ess/leave/types"),
   essApplyLeave: (input: { leaveType: string; fromDate: string; toDate: string; reason?: string; compOffId?: string }) =>
