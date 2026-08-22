@@ -206,6 +206,25 @@ export type HrDashboard = {
   payrollLocked: boolean;
 };
 
+// Zivira_Project_Basic.docx Topic 3 — Salary Integration Engine. This is a
+// DIFFERENT payroll concept from PayrollRun above: PayrollRun is HR's own
+// monthly payroll-run/lock/payslip workflow, while PayrollHoldRow is the
+// SFA/CRM compliance hold — salary auto-held for chronic DCR defaulters,
+// released once a manager approves the employee's explanation (or HR
+// force-releases it here). Both read/write the same backend
+// PayrollStatusModel that the Admin and Manager portals already use, so a
+// release from any one of the three portals shows up in the other two
+// immediately — this just gives HR its own view of the same shared queue.
+// Field names copied verbatim from the backend's own row type so the UI
+// renders exactly what the server computes.
+export type PayrollHoldRow = {
+  id: string; employeeCode: string; employeeName?: string; role?: string; month: string;
+  status: "RELEASED" | "HOLD" | "EXPLANATION_SUBMITTED";
+  holdReason?: string | null; missedDaysSnapshot?: number;
+  employeeExplanation?: string | null; managerApprovedByName?: string | null; releasedAt?: string | null;
+};
+export type PayrollHoldSummary = { onHold: number; pendingApproval: number; released: number };
+
 export type PayrollSummary = {
   month: string;
   headcount: number;
@@ -403,6 +422,14 @@ export const apiClient = {
     request<PayrollRun>(`/company/payroll/runs/${id}/lock`, { method: "PATCH" }),
   payslip: (id: string) =>
     request<PayrollRun & { employeeName?: string; designation?: string; division?: string }>(`/company/payroll/runs/${id}/payslip`),
+
+  // Zivira_Project_Basic.docx Topic 3 — Salary Integration Engine
+  // (compliance hold queue, shared with Admin and Manager — see
+  // PayrollHoldRow above).
+  payrollHoldQueue: (month?: string) =>
+    request<PayrollHoldRow[]>(`/company/analytics/payroll${month ? `?month=${month}` : ""}`) as Promise<ApiEnvelope<PayrollHoldRow[]> & { summary: PayrollHoldSummary }>,
+  releasePayrollHold: (id: string) =>
+    request<PayrollHoldRow>(`/company/analytics/payroll/${id}/release`, { method: "PATCH" }),
 
   holidays: () => request<Holiday[]>("/company/holidays"),
 

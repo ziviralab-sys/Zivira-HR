@@ -82,6 +82,10 @@ export default function Sidebar({ isCollapsed = false, setIsCollapsed = () => {}
             <span className="text-xl">💳</span>
             {!isCollapsed && <span className="ml-3">Run Payroll</span>}
           </Link>
+          <Link href="/payroll/hold-queue" className={`flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-300 ${isCollapsed ? 'justify-center' : ''}`} title="Payroll Hold Queue">
+            <span className="text-xl">🔒</span>
+            {!isCollapsed && <span className="ml-3">Payroll Hold Queue</span>}
+          </Link>
           <Link href="/settings/payroll" className={`flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-300 ${isCollapsed ? 'justify-center' : ''}`} title="Payroll Settings">
             <span className="text-xl">⚙️</span>
             {!isCollapsed && <span className="ml-3">Payroll Settings</span>}
