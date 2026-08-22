@@ -470,6 +470,55 @@ export const apiClient = {
   hrDashboard: () => request<HrDashboard>("/company/hr-dashboard"),
   payrollSummary: (month: string) => request<PayrollSummary>(`/company/reports/payroll-summary?month=${month}`),
   payrollExportUrl: (month: string) => `${API_BASE_URL}/company/reports/payroll-export?month=${month}`,
+  // The Export button used to be a plain <a href=payrollExportUrl target="_blank">
+  // link — a bare browser navigation to an authenticated API route sends no
+  // Authorization header at all, which is exactly why it landed on
+  // {"error":{"message":"Missing bearer token"}} instead of a file. This
+  // fetches the same CSV data through an authenticated request instead, and
+  // parses it into a header/rows matrix so the Reports page can build a real
+  // Excel/PDF download from it client-side (the report route itself only
+  // ever returns CSV text, not JSON, so this can't go through `request<T>`).
+  payrollExportRows: async (month: string): Promise<{ headers: string[]; rows: string[][] }> => {
+    const token = getToken();
+    const res = await fetch(`${API_BASE_URL}/company/reports/payroll-export?month=${month}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      throw new Error(payload?.error?.message ?? "Failed to fetch payroll export");
+    }
+    const csv = await res.text();
+    const lines = csv.split(/\r?\n/).filter((l) => l.length > 0);
+    const parseLine = (line: string): string[] => {
+      const cells: string[] = [];
+      let cur = "";
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (inQuotes) {
+          if (ch === '"' && line[i + 1] === '"') {
+            cur += '"';
+            i++;
+          } else if (ch === '"') {
+            inQuotes = false;
+          } else {
+            cur += ch;
+          }
+        } else if (ch === '"') {
+          inQuotes = true;
+        } else if (ch === ",") {
+          cells.push(cur);
+          cur = "";
+        } else {
+          cur += ch;
+        }
+      }
+      cells.push(cur);
+      return cells;
+    };
+    const parsed = lines.map(parseLine);
+    return { headers: parsed[0] ?? [], rows: parsed.slice(1) };
+  },
   // Phase 2 "Advanced Reports"
   statutorySummary: (month: string) => request<StatutorySummary>(`/company/reports/statutory-summary?month=${month}`),
   otSummary: (month: string) => request<OtSummary>(`/company/reports/ot-summary?month=${month}`),
