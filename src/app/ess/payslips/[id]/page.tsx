@@ -35,12 +35,30 @@ export default function ESSPayslipDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <main className="max-w-3xl mx-auto px-6 pt-24 pb-12 space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Scope printing/"Save as PDF" to just the payslip card — without
+          this, the browser printed the whole page (top nav bar, "Back to
+          Payslips" link, etc.) along with the payslip, producing 2 sheets
+          of paper for a 1-page document. */}
+      <style jsx global>{`
+        @media print {
+          body * { visibility: hidden; }
+          #payslip-print-area, #payslip-print-area * { visibility: visible; }
+          #payslip-print-area {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            margin: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+          }
+        }
+      `}</style>
+      <div className="flex items-center justify-between print:hidden">
         <Link href="/ess/payslips" className="text-orange-600 hover:underline font-medium text-sm">&larr; Back to Payslips</Link>
         <button onClick={() => window.print()} className="px-4 py-2 rounded-lg font-medium bg-orange-600 text-white hover:bg-orange-700">Print / Save as PDF</button>
       </div>
 
-      <div className="bg-white dark:bg-gray-900 rounded-sm border border-gray-200 dark:border-gray-800 shadow-lg p-12 print:shadow-none print:border-none">
+      <div id="payslip-print-area" className="bg-white dark:bg-gray-900 rounded-sm border border-gray-200 dark:border-gray-800 shadow-lg p-12 print:shadow-none print:border-none">
         <div className="text-center mb-10 pb-6 border-b-2 border-gray-800">
           <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100 tracking-tight uppercase">Zivira Labs Pvt. Ltd.</h1>
           <h2 className="text-xl font-bold text-orange-800 mt-6 uppercase tracking-wider">

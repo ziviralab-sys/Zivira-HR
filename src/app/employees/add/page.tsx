@@ -28,6 +28,7 @@ export default function AddEmployeePage() {
     role: "OTHER" as (typeof ROLES)[number],
     joinDate: "",
     reportingManager: "",
+    drivingLicense: "",
     status: "ACTIVE" as "ACTIVE" | "INACTIVE"
   });
 
@@ -69,6 +70,7 @@ export default function AddEmployeePage() {
         reportingManager: form.reportingManager || undefined,
         email: email || null,
         joinDate: form.joinDate || null,
+        drivingLicense: form.drivingLicense.trim() || undefined,
         status: form.status
       });
       toast.success("Employee created.");
@@ -172,6 +174,17 @@ export default function AddEmployeePage() {
                   <option key={emp.employeeCode} value={emp.employeeCode}>{emp.employeeCode} - {emp.name}</option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Driving License</label>
+              <input
+                type="text"
+                value={form.drivingLicense}
+                onChange={(e) => update("drivingLicense", e.target.value)}
+                placeholder="e.g. DL-MH-20-1234567"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors bg-white dark:bg-gray-900"
+              />
             </div>
 
             <div>

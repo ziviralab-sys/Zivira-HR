@@ -38,7 +38,26 @@ export default function EmployeePayslipPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 mb-12">
-      <div className="flex items-center justify-between pb-6">
+      {/* Print / Save as PDF used to print the entire dashboard (sidebar,
+          header, filters) alongside the payslip — 2 sheets of paper for a
+          1-page document. This scopes the browser's print output to just
+          the payslip card below (#payslip-print-area) so everything else
+          on the page is hidden while printing/exporting to PDF. */}
+      <style jsx global>{`
+        @media print {
+          body * { visibility: hidden; }
+          #payslip-print-area, #payslip-print-area * { visibility: visible; }
+          #payslip-print-area {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            margin: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+          }
+        }
+      `}</style>
+      <div className="flex items-center justify-between pb-6 print:hidden">
         <div className="flex items-center gap-4">
           <Link href={`/employees/${employeeId}`} className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:text-gray-200">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -79,7 +98,7 @@ export default function EmployeePayslipPage({ params }: { params: Promise<{ id: 
           No payroll run found for this employee yet.
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-900 rounded-sm border border-gray-200 dark:border-gray-800 shadow-lg p-12 print:shadow-none print:border-none">
+        <div id="payslip-print-area" className="bg-white dark:bg-gray-900 rounded-sm border border-gray-200 dark:border-gray-800 shadow-lg p-12 print:shadow-none print:border-none">
 
           {/* Header */}
           <div className="text-center mb-10 pb-6 border-b-2 border-gray-800">

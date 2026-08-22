@@ -203,6 +203,10 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Territory</p>
               <p className="font-medium text-gray-900 dark:text-gray-100">{employee.territory}</p>
             </div>
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Driving License</p>
+              <p className="font-medium text-gray-900 dark:text-gray-100">{(employee as any).drivingLicense ?? "—"}</p>
+            </div>
           </div>
         </div>
       </div>

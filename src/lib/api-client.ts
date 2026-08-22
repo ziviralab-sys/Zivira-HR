@@ -29,6 +29,7 @@ export type Employee = {
   phone?: string | null;
   joinDate?: string | null;
   state?: string | null;
+  drivingLicense?: string | null;
   status: "ACTIVE" | "INACTIVE";
   [key: string]: unknown;
 };
