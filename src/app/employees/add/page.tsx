@@ -21,6 +21,7 @@ export default function AddEmployeePage() {
   const [form, setForm] = useState({
     employeeCode: "",
     emailLocal: "",
+    personalEmail: "",
     name: "",
     designation: "",
     division: "",
@@ -58,6 +59,10 @@ export default function AddEmployeePage() {
       toast.error(`Employee Code "${form.employeeCode}" already exists. Choose a different code.`);
       return;
     }
+    if (form.personalEmail.trim() && !/^\S+@\S+\.\S+$/.test(form.personalEmail.trim())) {
+      toast.error("Enter a valid Personal Email address.");
+      return;
+    }
     setIsSaving(true);
     try {
       await apiClient.createEmployee({
@@ -69,6 +74,11 @@ export default function AddEmployeePage() {
         role: form.role,
         reportingManager: form.reportingManager || undefined,
         email: email || null,
+        // New request item 2 — separate personal email HR captures here.
+        // Trigger Onboarding (on the employee's profile page) sends the
+        // Zivira HR portal link + employee code + temp password to this
+        // address, in addition to the existing official-email send.
+        personalEmail: form.personalEmail.trim() || null,
         joinDate: form.joinDate || null,
         drivingLicense: form.drivingLicense.trim() || undefined,
         status: form.status
@@ -132,6 +142,18 @@ export default function AddEmployeePage() {
                 </span>
               </div>
               {email && <p className="mt-1 text-xs text-gray-400">{email}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Personal Email</label>
+              <input
+                type="email"
+                placeholder="e.g. name@gmail.com"
+                value={form.personalEmail}
+                onChange={(e) => update("personalEmail", e.target.value.trim())}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors bg-white dark:bg-gray-900"
+              />
+              <p className="mt-1 text-xs text-gray-400">Onboarding credentials and the portal link are also emailed here.</p>
             </div>
 
             <div>

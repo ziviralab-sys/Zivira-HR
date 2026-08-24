@@ -26,6 +26,10 @@ export type Employee = {
   territory: string;
   role: "NBH" | "BH" | "RBM" | "ZBM" | "ABM" | "SR_MR" | "MR" | "OTHER";
   email?: string | null;
+  // New request item 2 — separate personal/gmail address HR captures on
+  // Add New Employee. Trigger Onboarding emails the portal link + employee
+  // code + temp password here in addition to `email` above.
+  personalEmail?: string | null;
   phone?: string | null;
   joinDate?: string | null;
   state?: string | null;
@@ -564,6 +568,12 @@ export const apiClient = {
       body: JSON.stringify({ fileName, fileData, fileType, fileSize })
     }),
   essSubmitOnboarding: () => request<Onboarding>("/ess/onboarding/submit", { method: "POST" }),
+  // New request item 3 — called after client-side OCR reads a license
+  // number off the uploaded Driving License photo. Writes straight onto
+  // EmployeeModel.drivingLicense, the same field HR's Employee Profile
+  // and FieldRepo already show.
+  updateDrivingLicense: (drivingLicense: string) =>
+    request<Employee>("/ess/profile/driving-license", { method: "PATCH", body: JSON.stringify({ drivingLicense }) }),
   essAttendance: (month?: string) => request<Attendance[]>(`/ess/attendance${month ? `?month=${month}` : ""}`),
   essPunchAttendance: (action: "IN" | "OUT") =>
     request<Attendance>("/ess/attendance/punch", { method: "POST", body: JSON.stringify({ action }) }),

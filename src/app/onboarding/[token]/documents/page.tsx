@@ -24,6 +24,41 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
+// New request item 3 — "after uploading it the driving license must be
+// automatically fill the details in the HR portal and the field repo
+// portal under the driving license name." Free, on-device OCR
+// (Tesseract.js — no API key, no external service) runs right in the
+// browser on the uploaded Driving License photo, pulls out the most
+// plausible license-number-looking token, and saves it straight onto
+// EmployeeModel.drivingLicense via PATCH /ess/profile/driving-license —
+// the SAME field the HR Employee Profile and FieldRepo already display,
+// so both pick it up immediately with no extra sync step. Loaded
+// dynamically (it's a multi-MB WASM engine) so it never slows down the
+// rest of the onboarding flow, and only runs for image files — PDFs are
+// skipped since Tesseract.js only reads images.
+//
+// Indian driving license numbers are State Code (2 letters) + RTO code
+// (2 digits) + year + a run of digits, e.g. "TN01 20230012345" or
+// "KA-05-2019-1234567" — this regex is deliberately loose (letters,
+// digits, spaces, and hyphens only) so it matches real formats without
+// pretending to validate any one state's exact layout. If nothing
+// plausible is found, the field is simply left for HR/the employee to
+// fill in manually, same as before this change.
+const LICENSE_NUMBER_PATTERN = /\b[A-Z]{2}[\s-]?\d{2}[\s-]?(?:\d{4}[\s-]?)?\d{6,11}\b/;
+
+async function extractDrivingLicenseNumber(file: File): Promise<string | null> {
+  if (!file.type.startsWith("image/")) return null; // Tesseract.js reads images, not PDFs
+  try {
+    const Tesseract = await import("tesseract.js");
+    const { data } = await Tesseract.recognize(file, "eng");
+    const text = (data?.text || "").toUpperCase();
+    const match = text.match(LICENSE_NUMBER_PATTERN);
+    return match ? match[0].replace(/\s+/g, " ").trim() : null;
+  } catch {
+    return null; // best-effort — a failed OCR pass never blocks the upload itself
+  }
+}
+
 export default function EmployeeDocumentUploadPage() {
   const router = useRouter();
   const [onboarding, setOnboarding] = useState<Onboarding | null>(null);
@@ -53,6 +88,23 @@ export default function EmployeeDocumentUploadPage() {
       const dataUrl = await readFileAsDataUrl(file);
       await apiClient.essUploadOnboardingDocument(docName, file.name, dataUrl, file.type || "application/octet-stream", file.size);
       toast.success(`${docName} uploaded.`);
+
+      // New request item 3 — only the Driving License slot triggers OCR
+      // auto-fill; every other document type behaves exactly as before.
+      if (docName === "Driving License") {
+        const licenseNumber = await extractDrivingLicenseNumber(file);
+        if (licenseNumber) {
+          try {
+            await apiClient.updateDrivingLicense(licenseNumber);
+            toast.success(`Driving License auto-filled: ${licenseNumber}`);
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Uploaded, but auto-fill failed — HR can enter it manually.");
+          }
+        } else {
+          toast("Couldn't auto-read the license number from that photo — HR can enter it manually.", { icon: "ℹ️" });
+        }
+      }
+
       load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to upload document");

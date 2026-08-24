@@ -16,7 +16,16 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
   const [leave, setLeave] = useState<LeaveApplication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isBusy, setIsBusy] = useState(false);
-  const [credentials, setCredentials] = useState<{ username: string; tempPassword: string } | null>(null);
+  const [credentials, setCredentials] = useState<{
+    username: string;
+    tempPassword: string;
+    emailSent?: boolean;
+    note?: string;
+    // New request item 2 — the trigger-mail response now also reports
+    // whether a copy went to the employee's personal email.
+    personalEmailSent?: boolean;
+    personalEmailNote?: string;
+  } | null>(null);
 
   const load = () => {
     setIsLoading(true);
@@ -59,12 +68,31 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
     setIsBusy(true);
     try {
       const res = await apiClient.triggerOnboardingMail(employeeId);
-      const creds = (res as unknown as { credentials?: { username: string; tempPassword: string } }).credentials;
+      // Item 2 — the backend now actually sends this employee's login
+      // credentials to their own email (Employee Master's `email` field),
+      // and reports back whether it did (`emailSent`) plus a human-readable
+      // `note` covering the "no email on file" fallback case.
+      const typed = res as unknown as {
+        credentials?: { username: string; tempPassword: string };
+        emailSent?: boolean;
+        note?: string;
+        personalEmailSent?: boolean;
+        personalEmailNote?: string;
+      };
+      const creds = typed.credentials;
       if (creds) {
         // Stays open until HR explicitly chooses Save or Dismiss — it must
         // not auto-vanish, since this is the only place the temp password
         // is ever shown.
-        setCredentials(creds);
+        setCredentials({
+          ...creds,
+          emailSent: typed.emailSent,
+          note: typed.note,
+          personalEmailSent: typed.personalEmailSent,
+          personalEmailNote: typed.personalEmailNote
+        });
+        if (typed.emailSent) toast.success(`Onboarding email sent.`);
+        if (typed.personalEmailSent) toast.success(`Also sent to the employee's personal email.`);
       } else {
         toast.success("Onboarding email triggered.");
       }
@@ -105,7 +133,14 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wide mb-1">Login Credentials Generated</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">No email service is configured — share these with the employee directly, or Save to keep them under your notifications.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              {credentials.emailSent
+                ? (credentials.note ?? "An email with these credentials was sent to the employee.")
+                : (credentials.note ?? "This employee has no email on file — share these credentials with them directly, or Save to keep them under your notifications.")}
+            </p>
+            {credentials.personalEmailNote && (
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 -mt-2">{credentials.personalEmailNote}</p>
+            )}
             <div className="bg-gray-50 dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800 p-4 space-y-2 mb-6">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500 dark:text-gray-400">Employee ID</span>
@@ -194,6 +229,10 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Official Email</p>
               <p className="font-medium text-gray-900 dark:text-gray-100">{employee.email ?? "—"}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Personal Email</p>
+              <p className="font-medium text-gray-900 dark:text-gray-100">{employee.personalEmail ?? "—"}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Reporting Manager</p>

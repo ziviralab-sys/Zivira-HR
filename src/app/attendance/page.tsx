@@ -16,6 +16,37 @@ function formatTime(iso?: string | null) {
   return new Date(iso).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
 }
 
+// Request (item 4) — the "Correct"/"Add Punch" edit boxes used to pre-fill
+// via `new Date(iso).toISOString().slice(11,16)`, which is always the UTC
+// clock time. The read-only table cell right next to it uses
+// `toLocaleTimeString("en-IN", ...)`, which renders in the VIEWER'S local
+// timezone. Those two only agree when the browser's local timezone happens
+// to be UTC, so on any IST machine the edit box showed a different (wrong)
+// time than the table — and saving it back (see saveRow below) baked that
+// same UTC/local mismatch into the stored value, corrupting it further on
+// every "correction". isoToLocalHHMM reads the same local wall-clock
+// components `toLocaleTimeString` renders, so the edit box always starts
+// out matching exactly what the table already shows.
+function isoToLocalHHMM(iso?: string | null) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+// Builds the punch instant from the date + the HH:MM the HR user actually
+// sees/types (both already local wall-clock), using the multi-arg Date
+// constructor — which JS interprets as LOCAL time — then serializes with
+// toISOString() so the backend receives an explicit, unambiguous UTC
+// instant (no more sending a bare "no-Z" string that the server has to
+// guess the timezone of).
+function localDateTimeToISO(dateStr: string, timeStr: string) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const [hh, mm] = timeStr.split(":").map(Number);
+  if (!y || !m || !d || Number.isNaN(hh) || Number.isNaN(mm)) return undefined;
+  return new Date(y, m - 1, d, hh, mm, 0).toISOString();
+}
+
 function workingHours(checkInAt?: string | null, checkOutAt?: string | null) {
   if (!checkInAt) return null;
   if (!checkOutAt) return "Currently Working";
@@ -79,8 +110,8 @@ export default function AttendanceRegisterPage() {
     const existing = byEmployee[employeeCode];
     setEditForm({
       status: existing?.status ?? "PRESENT",
-      checkIn: existing?.checkInAt ? new Date(existing.checkInAt).toISOString().slice(11, 16) : "",
-      checkOut: existing?.checkOutAt ? new Date(existing.checkOutAt).toISOString().slice(11, 16) : ""
+      checkIn: existing?.checkInAt ? isoToLocalHHMM(existing.checkInAt) : "",
+      checkOut: existing?.checkOutAt ? isoToLocalHHMM(existing.checkOutAt) : ""
     });
     setEditingCode(employeeCode);
   };
@@ -93,8 +124,8 @@ export default function AttendanceRegisterPage() {
         employeeCode: editingCode,
         attendanceDate: selectedDate,
         status: editForm.status,
-        checkInAt: editForm.checkIn ? `${selectedDate}T${editForm.checkIn}:00` : undefined,
-        checkOutAt: editForm.checkOut ? `${selectedDate}T${editForm.checkOut}:00` : undefined
+        checkInAt: editForm.checkIn ? localDateTimeToISO(selectedDate, editForm.checkIn) : undefined,
+        checkOutAt: editForm.checkOut ? localDateTimeToISO(selectedDate, editForm.checkOut) : undefined
       }]);
       toast.success("Attendance saved.");
       setEditingCode(null);
