@@ -27,14 +27,14 @@ export default function LoginPage() {
       toast.success("Welcome back!");
 
       if (portal === "EMPLOYEE") {
-        // A new employee logging in with their temp password fills their
-        // Personal Info (and the rest of the onboarding form) first, then
-        // lands on their Employee Dashboard once details are in — password
-        // creation is prompted from there, not forced before they can see
-        // anything. See /onboarding/me/form and the dashboard's "Set Your
-        // Password" banner.
+        // A new employee logging in with their temp password must create a
+        // real password first — /onboarding/me — before anything else. Only
+        // once that's done do they move on to filling in their onboarding
+        // details (Personal Info through Documents & Review). See
+        // /onboarding/[token]/page.tsx, which decides where to send them
+        // next once the password is set.
         if (res.data.user.mustChangePassword) {
-          router.push("/onboarding/me/form");
+          router.push("/onboarding/me");
         } else {
           router.push("/ess");
         }
