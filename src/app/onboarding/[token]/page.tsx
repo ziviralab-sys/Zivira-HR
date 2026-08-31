@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { apiClient, getStoredUser, setStoredUser } from "@/lib/api-client";
 
-// Zivira_HR_Client_Requirement_1B.docx "CREATE PASSWORD" — reached from
-// the Employee Dashboard's "Set Your Password" prompt, after the employee
-// has already filled in their onboarding details (Personal Info through
-// Documents & Review) and can see their profile on the dashboard.
+// Zivira_HR_Client_Requirement_1B.docx "CREATE PASSWORD" — the very first
+// screen an employee sees after signing in with their temporary password
+// (see the redirect in src/app/page.tsx). Onboarding details (Personal Info
+// through Documents & Review) are only asked for once a real password is
+// in place, not before — an account secured with a password the employee
+// never chose shouldn't be the one collecting their personal data.
 // params.token is unused; the logged-in employee's own JWT already
 // identifies who this is — see POST /auth/change-password.
 export default function CreatePasswordPage({ params }: { params: { token: string } }) {
@@ -31,14 +33,32 @@ export default function CreatePasswordPage({ params }: { params: { token: string
     setIsSaving(true);
     try {
       await apiClient.changePassword(currentPassword, newPassword);
-      // The dashboard's "Set Your Password" banner reads this flag straight
-      // out of localStorage — without updating it here it stays stale
-      // forever (until the next full re-login), so the banner would keep
-      // nagging an employee who already changed their password.
+      // The ESS dashboard's "Set Your Password" banner (now just a fallback
+      // for accounts that reach it with a temp password still active, e.g.
+      // an HR-triggered reset) reads this flag straight out of localStorage
+      // — without updating it here it stays stale forever, nagging an
+      // employee who already changed their password.
       const user = getStoredUser();
       if (user) setStoredUser({ ...user, mustChangePassword: false });
-      toast.success("Password set. Welcome to your dashboard!");
-      router.push("/ess");
+      toast.success("Password set!");
+      // Password is the gate; onboarding is the next step for anyone who
+      // hasn't finished it yet. Someone whose onboarding is already
+      // SUBMITTED (awaiting HR review) or COMPLETED shouldn't be sent back
+      // into the form — they go straight to their dashboard instead.
+      try {
+        const profile = await apiClient.essProfile();
+        const status = profile.data.onboardingStatus;
+        if (status === "SUBMITTED" || status === "COMPLETED") {
+          router.push("/ess");
+        } else {
+          router.push("/onboarding/me/form");
+        }
+      } catch {
+        // Couldn't confirm onboarding status — default to the onboarding
+        // form rather than risk skipping it; if it's already done, the
+        // form loads it pre-filled and "Continue to Documents" is one click.
+        router.push("/onboarding/me/form");
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to set password");
     } finally {
@@ -53,7 +73,7 @@ export default function CreatePasswordPage({ params }: { params: { token: string
           Create Your Password
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-          Welcome to Zivira HR! Please set up a secure password to finish securing your account.
+          Welcome to Zivira HR! Before we collect your onboarding details, please set a permanent password for your account.
         </p>
       </div>
 
