@@ -143,10 +143,11 @@ export default function EmployeeDashboardPage() {
           )}
         </div>
 
-        {/* Set-password prompt — the temp-password gate now unlocks straight
-            into onboarding + this dashboard; the account isn't fully secured
-            until a real password is set, so this stays visible (not a
-            blocking modal) until that's done. */}
+        {/* Set-password prompt — normally an employee already sets their
+            permanent password right after login, before ever reaching this
+            dashboard (see /onboarding/me). This is a fallback for the rare
+            case mustChangePassword is still true here anyway — e.g. HR
+            triggered a password reset on an already-onboarded account. */}
         {mustChangePassword && (
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-800 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
